@@ -1,0 +1,143 @@
+# 依赖文件
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出
+dist/
+build/
+.next/
+
+# 日志文件
+logs/
+*.log
+
+# 运行时数据
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率报告
+coverage/
+.nyc_output/
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 数据库文件
+*.sqlite
+*.sqlite3
+
+# 临时文件
+tmp/
+temp/
+
+# 缓存文件
+.cache/
+.parcel-cache/
+
+# 证书和密钥
+*.pem
+*.key
+*.crt
+credentials/
+google-credentials.json
+
+# 测试文件
+test-results/
+playwright-report/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Docker
+.dockerignore
+
+# Claude AI related
+.claude/
+
+# Vite (if using)
+dist-ssr/
+*.local
+
+# Storybook build outputs
+storybook-static/
+
+# Runtime config
+*.tsbuildinfo
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Package manager lock files (optional - add if you don't want to commit them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Local development
+.local/
+.cache/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Database migrations (if auto-generated)
+migrations/
+
+# AI/ML model files
+*.pkl
+*.joblib
+*.h5
+*.pb
+
+# Browser sync
+.browsersyncrc
+
+# Serverless directories
+.serverless/
