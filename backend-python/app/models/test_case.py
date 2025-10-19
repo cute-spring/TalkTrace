@@ -187,6 +187,7 @@ class TestCaseCreate(BaseModel):
     input: TestCaseInput
     execution: Execution
     analysis: Optional[Analysis] = None
+    metadata: Optional[TestCaseMetadata] = None
 
 class TestCaseUpdate(BaseModel):
     """更新测试用例请求模型"""

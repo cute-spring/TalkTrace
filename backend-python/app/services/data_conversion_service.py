@@ -139,7 +139,8 @@ class DataConversionService:
             test_config=test_config,
             input=test_input,
             execution=execution,
-            analysis=analysis
+            analysis=analysis,
+            metadata=metadata
         )
 
     def _analyze_session(self, session_data: List[ConversationRow]) -> Dict[str, Any]:
