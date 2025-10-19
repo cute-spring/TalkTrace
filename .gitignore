@@ -88,9 +88,13 @@ build/
 
 # Docker
 .dockerignore
+Dockerfile
+docker-compose*.yml
+!docker-compose.example.yml
 
 # Claude AI related
 .claude/
+.claude-whitelist
 
 # Vite (if using)
 dist-ssr/
@@ -141,3 +145,19 @@ migrations/
 
 # Serverless directories
 .serverless/
+
+# Documentation and screenshots
+docs/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+
+# Development screenshots
+talk_trace_*.png
+test_case_page_*.png
+
+# Local development files
+.local
