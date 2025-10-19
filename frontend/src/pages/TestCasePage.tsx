@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Card,
   Table,
@@ -19,9 +20,11 @@ import {
   DeleteOutlined,
   SearchOutlined,
   ExclamationCircleOutlined,
+  EyeOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { testCaseService } from '../services/api'
+import TestCaseDetail from '../components/TestCaseDetail'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -37,35 +40,58 @@ interface TestCase {
   domain?: string
   difficulty?: string
   version: string
-  createdDate: string
-  updatedDate: string
-  tags: Array<{ tag: { name: string; color: string } }>
+  created_date: string
+  updated_date?: string
+  tags: Array<{ name: string; color: string }>
 }
 
 const TestCasePage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false)
+  const [detailModalVisible, setDetailModalVisible] = useState(false)
   const [currentTestCase, setCurrentTestCase] = useState<TestCase | null>(null)
+  const [currentTestCaseId, setCurrentTestCaseId] = useState<string>('')
   const [form] = Form.useForm()
 
+  // Initialize filters from URL parameters
   const [filters, setFilters] = useState({
-    page: 1,
-    pageSize: 20,
-    status: undefined,
-    domain: undefined,
-    priority: undefined,
-    search: '',
+    page: parseInt(searchParams.get('page') || '1'),
+    pageSize: parseInt(searchParams.get('pageSize') || '10'),
+    status: searchParams.get('status') || undefined,
+    domain: searchParams.get('domain') || undefined,
+    priority: searchParams.get('priority') || undefined,
+    search: searchParams.get('search') || '',
   })
 
   // 获取测试用例列表
   const fetchTestCases = async () => {
     setLoading(true)
     try {
-      const response = await testCaseService.getList(filters)
-      setData(response.data)
+      // Debug: Log the current filters state
+      console.log('Current filters state:', filters)
+
+      // Convert frontend parameter names to backend parameter names
+      const apiParams = {
+        ...filters,
+        page_size: filters.pageSize, // Convert pageSize to page_size for backend
+      }
+      delete apiParams.pageSize // Remove frontend parameter name
+
+      // Debug: Log the API parameters being sent
+      console.log('API parameters being sent:', apiParams)
+
+      const response = await testCaseService.getList(apiParams)
+      console.log('API Response:', response)
+      console.log('Response data:', response.data)
+      console.log('Items:', response.data?.data?.items)
+      console.log('Items length:', response.data?.data?.items?.length)
+      // Fix: Access the nested data structure correctly
+      setData(response.data.data)
     } catch (error) {
       message.error('获取测试用例列表失败')
       console.error('Failed to fetch test cases:', error)
@@ -74,13 +100,41 @@ const TestCasePage: React.FC = () => {
     }
   }
 
+  // Sync URL parameters with state
+  useEffect(() => {
+    const currentPage = parseInt(searchParams.get('page') || '1')
+    const currentPageSize = parseInt(searchParams.get('pageSize') || '10')
+    const currentStatus = searchParams.get('status') || undefined
+    const currentDomain = searchParams.get('domain') || undefined
+    const currentPriority = searchParams.get('priority') || undefined
+    const currentSearch = searchParams.get('search') || ''
+
+    setFilters({
+      page: currentPage,
+      pageSize: currentPageSize,
+      status: currentStatus,
+      domain: currentDomain,
+      priority: currentPriority,
+      search: currentSearch,
+    })
+  }, [searchParams])
+
   useEffect(() => {
     fetchTestCases()
   }, [filters])
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, page: 1 }))
-    fetchTestCases()
+
+    // Update URL parameters
+    const params = new URLSearchParams(searchParams)
+    params.set('page', '1')
+    if (filters.search) params.set('search', filters.search)
+    if (filters.status) params.set('status', filters.status)
+    if (filters.domain) params.set('domain', filters.domain)
+    if (filters.priority) params.set('priority', filters.priority)
+    if (filters.pageSize !== 20) params.set('pageSize', filters.pageSize.toString())
+    setSearchParams(params)
   }
 
   const handleEdit = (record: TestCase) => {
@@ -143,7 +197,8 @@ const TestCasePage: React.FC = () => {
 
   const handleViewDetails = (record: TestCase) => {
     setCurrentTestCase(record)
-    setDetailDrawerVisible(true)
+    setCurrentTestCaseId(record.id)
+    setDetailModalVisible(true)
   }
 
   const handleSubmit = async (values: any) => {
@@ -166,6 +221,7 @@ const TestCasePage: React.FC = () => {
       pending_review: { color: 'processing', text: '待审核' },
       approved: { color: 'success', text: '已审核' },
       published: { color: 'success', text: '已发布' },
+      rejected: { color: 'error', text: '已拒绝' },
     }
 
     const config = statusConfig[status] || statusConfig.draft
@@ -189,9 +245,11 @@ const TestCasePage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       render: (text, record) => (
-        <Button type="link" onClick={() => handleViewDetails(record)}>
-          {text}
-        </Button>
+        <Space>
+          <Button type="link" onClick={() => handleViewDetails(record)}>
+            {text}
+          </Button>
+        </Space>
       ),
     },
     {
@@ -236,8 +294,8 @@ const TestCasePage: React.FC = () => {
       render: (tags) => (
         <Space wrap>
           {tags.map((tagItem, index) => (
-            <Tag key={index} color={tagItem.tag.color}>
-              {tagItem.tag.name}
+            <Tag key={index} color={tagItem.color}>
+              {tagItem.name}
             </Tag>
           ))}
         </Space>
@@ -245,17 +303,25 @@ const TestCasePage: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createdDate',
-      key: 'createdDate',
+      dataIndex: 'created_date',
+      key: 'created_date',
       width: 180,
       render: (time) => new Date(time).toLocaleString(),
     },
     {
       title: '操作',
       key: 'actions',
-      width: 150,
+      width: 200,
       render: (_, record) => (
         <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewDetails(record)}
+          >
+            详情
+          </Button>
           <Button
             type="link"
             size="small"
@@ -382,7 +448,14 @@ const TestCasePage: React.FC = () => {
             showTotal: (total, range) =>
               `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
             onChange: (page, pageSize) => {
-              setFilters(prev => ({ ...prev, page, pageSize: pageSize || 20 }))
+              const newPageSize = pageSize || 20
+              setFilters(prev => ({ ...prev, page, pageSize: newPageSize }))
+
+              // Update URL parameters
+              const params = new URLSearchParams(searchParams)
+              params.set('page', page.toString())
+              params.set('pageSize', newPageSize.toString())
+              setSearchParams(params)
             },
           }}
         />
@@ -495,6 +568,16 @@ const TestCasePage: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* 详细信息模态框 */}
+      <TestCaseDetail
+        testCaseId={currentTestCaseId}
+        visible={detailModalVisible}
+        onClose={() => {
+          setDetailModalVisible(false)
+          setCurrentTestCaseId('')
+        }}
+      />
     </div>
   )
 }
