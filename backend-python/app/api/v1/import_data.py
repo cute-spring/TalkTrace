@@ -4,7 +4,7 @@ from typing import Optional
 
 from app.services.import_service import ImportService
 from app.models.import_models import (
-    ImportRequest, ImportPreview, ImportTask, ImportProgress
+    ImportRequest, ImportPreview, ImportTask, ImportProgress, ImportValidationResult
 )
 from app.models.common import ApiResponse
 from app.utils.logger import logger
@@ -18,6 +18,26 @@ def get_import_service():
 
 # 获取共享的导入服务实例
 import_service = get_import_service()
+
+@router.post("/validate-sessions", response_model=ApiResponse[ImportValidationResult])
+async def validate_sessions(request: ImportRequest):
+    """验证会话重复性"""
+    try:
+        validation_result = await import_service.check_duplicate_sessions(request.session_ids)
+
+        logger.info("Session validation completed",
+                   total_sessions=len(request.session_ids),
+                   duplicate_count=validation_result.duplicate_count,
+                   valid_count=len(validation_result.valid_sessions))
+
+        return ApiResponse(success=True, data=validation_result)
+
+    except Exception as e:
+        logger.error("Session validation failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="验证会话失败"
+        )
 
 @router.post("/preview", response_model=ApiResponse[ImportPreview])
 async def preview_import(request: ImportRequest):

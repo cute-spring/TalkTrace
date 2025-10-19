@@ -17,7 +17,7 @@ import {
   Row,
   Col,
 } from 'antd'
-import { ImportOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { ImportOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { importService, historyService } from '../services/api'
 
@@ -51,6 +51,23 @@ interface PreviewSession {
   has_user_rating: boolean
 }
 
+interface DuplicateSessionInfo {
+  session_id: string
+  existing_test_case_id: string
+  existing_test_case_name: string
+  import_date: string
+  owner: string
+}
+
+interface ValidationResult {
+  valid_sessions: string[]
+  duplicate_sessions: DuplicateSessionInfo[]
+  can_import_all: boolean
+  total_count: number
+  duplicate_count: number
+  message: string
+}
+
 const ImportPage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const [currentStep, setCurrentStep] = useState(0)
@@ -59,11 +76,14 @@ const ImportPage: React.FC = () => {
   const [previewData, setPreviewData] = useState<PreviewSession[]>([])
   const [importTasks, setImportTasks] = useState<ImportTask[]>([])
   const [currentTask, setCurrentTask] = useState<ImportTask | null>(null)
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
+  const [duplicateSessions, setDuplicateSessions] = useState<DuplicateSessionInfo[]>([])
   const [importConfig, setImportConfig] = useState({
     defaultOwner: '',
     defaultPriority: 'medium',
     defaultDifficulty: 'medium',
     includeAnalysis: false,
+    skipDuplicates: false,
   })
 
   // 从URL参数获取会话ID
@@ -81,9 +101,27 @@ const ImportPage: React.FC = () => {
   const loadPreviewData = async (ids: string[]) => {
     setLoading(true)
     try {
-      const response = await importService.preview({ session_ids: ids.slice(0, 5) })
-      setPreviewData(response.data.preview_data || [])
-      message.success('预览数据加载成功')
+      const response = await importService.preview({ session_ids: ids })
+      const data = response.data.data || response.data
+      setPreviewData(data.preview_data || [])
+
+      // 设置重复会话信息
+      if (data.duplicate_sessions) {
+        setDuplicateSessions(data.duplicate_sessions)
+      }
+
+      // 设置验证结果
+      if (data.validation_result) {
+        setValidationResult(data.validation_result)
+      }
+
+      // 显示重复信息提示
+      if (data.validation_result && data.validation_result.duplicate_count > 0) {
+        const validation = data.validation_result
+        message.warning(`发现 ${validation.duplicate_count} 个重复会话，${validation.valid_sessions.length} 个新会话可以导入`)
+      } else {
+        message.success('预览数据加载成功')
+      }
     } catch (error) {
       message.error('加载预览数据失败')
       console.error('Failed to load preview:', error)
@@ -256,6 +294,41 @@ const ImportPage: React.FC = () => {
     },
   ]
 
+  const duplicateColumns: ColumnsType<DuplicateSessionInfo> = [
+    {
+      title: '会话ID',
+      dataIndex: 'session_id',
+      key: 'session_id',
+      width: 200,
+      render: (text) => <Text code style={{ fontSize: 12 }}>{text}</Text>,
+    },
+    {
+      title: '已存在测试用例',
+      dataIndex: 'existing_test_case_name',
+      key: 'existing_test_case_name',
+      ellipsis: true,
+      render: (text, record) => (
+        <Space>
+          <Text>{text}</Text>
+          <Text type="secondary">({record.existing_test_case_id})</Text>
+        </Space>
+      ),
+    },
+    {
+      title: '负责人',
+      dataIndex: 'owner',
+      key: 'owner',
+      width: 120,
+    },
+    {
+      title: '原导入时间',
+      dataIndex: 'import_date',
+      key: 'import_date',
+      width: 180,
+      render: (time) => new Date(time).toLocaleString(),
+    },
+  ]
+
   const taskColumns: ColumnsType<ImportTask> = [
     {
       title: '任务ID',
@@ -414,6 +487,51 @@ const ImportPage: React.FC = () => {
             )}
           </div>
 
+          {/* 重复会话信息 */}
+          {duplicateSessions.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <Title level={4}>
+                <span style={{ color: '#faad14' }}>
+                  <ExclamationCircleOutlined style={{ marginRight: 8 }} />
+                  重复会话检测
+                </span>
+              </Title>
+              <Alert
+                message="发现重复会话"
+                description={`检测到 ${duplicateSessions.length} 个会话已被导入，这些会话将被跳过。`}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Table
+                columns={duplicateColumns}
+                dataSource={duplicateSessions}
+                rowKey="session_id"
+                pagination={false}
+                size="small"
+                style={{ marginBottom: 16 }}
+              />
+            </div>
+          )}
+
+          {/* 导入选项 */}
+          {validationResult && validationResult.duplicate_count > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <Title level={4}>导入选项</Title>
+              <Space direction="vertical">
+                <Checkbox
+                  checked={importConfig.skipDuplicates}
+                  onChange={(e) => setImportConfig(prev => ({ ...prev, skipDuplicates: e.target.checked }))}
+                >
+                  跳过重复会话，仅导入新会话 ({validationResult.valid_sessions.length} 个)
+                </Checkbox>
+                <Text type="secondary">
+                  如取消勾选，重复会话将作为新测试用例导入，但不推荐此操作。
+                </Text>
+              </Space>
+            </div>
+          )}
+
           <Space>
             <Button
               type="primary"
@@ -422,7 +540,10 @@ const ImportPage: React.FC = () => {
               loading={loading}
               disabled={!importConfig.defaultOwner}
             >
-              开始导入
+              开始导入 {validationResult && validationResult.duplicate_count > 0 ?
+                `(${validationResult.valid_sessions.length} 个新会话)` :
+                `(${sessionIds.length} 个会话)`
+              }
             </Button>
             <Button onClick={() => setCurrentStep(0)}>
               返回选择

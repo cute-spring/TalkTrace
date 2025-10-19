@@ -42,7 +42,9 @@ export const historyService = {
 
 // 导入相关API
 export const importService = {
-  preview: (data: { sessionIds: string[] }) =>
+  validateSessions: (data: { session_ids: string[] }) =>
+    apiClient.post<ApiResponse>('/v1/import/validate-sessions', data),
+  preview: (data: { session_ids: string[] }) =>
     apiClient.post<ApiResponse>('/v1/import/preview', data),
   execute: (data: { session_ids: string[]; defaultOwner?: string; defaultPriority?: string; defaultDifficulty?: string; includeAnalysis?: boolean }) =>
     apiClient.post<ApiResponse>('/v1/import/execute', data),

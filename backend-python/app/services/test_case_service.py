@@ -316,3 +316,65 @@ class TestCaseService:
 
         logger.info("Tags retrieved", tag_count=len(unique_tags))
         return unique_tags
+
+    async def get_test_cases_by_source_session(self, session_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """根据源会话ID获取测试用例映射"""
+        logger.info("Getting test cases by source sessions", session_count=len(session_ids))
+
+        session_mapping = {}
+
+        for _, row in self.df.iterrows():
+            metadata = row["metadata"]
+
+            # 兼容字典和对象两种格式获取source_session
+            def get_metadata_field(field_name):
+                if hasattr(metadata, field_name):
+                    return getattr(metadata, field_name, None)
+                elif isinstance(metadata, dict):
+                    return metadata.get(field_name)
+                return None
+
+            source_session = get_metadata_field('source_session')
+
+            if source_session in session_ids:
+                # 获取负责人信息
+                owner = get_metadata_field('owner') or 'unknown'
+                created_date = get_metadata_field('created_date') or 'unknown'
+
+                session_mapping[source_session] = {
+                    "test_case_id": row["id"],
+                    "test_case_name": row["name"],
+                    "owner": owner,
+                    "import_date": created_date
+                }
+
+        logger.info("Found existing test cases for sessions",
+                   found_count=len(session_mapping),
+                   requested_count=len(session_ids))
+
+        return session_mapping
+
+    async def get_source_session_mapping(self) -> Dict[str, str]:
+        """获取所有源会话ID到测试用例ID的映射"""
+        logger.info("Getting all source session mappings")
+
+        session_mapping = {}
+
+        for _, row in self.df.iterrows():
+            metadata = row["metadata"]
+
+            # 兼容字典和对象两种格式获取source_session
+            def get_metadata_field(field_name):
+                if hasattr(metadata, field_name):
+                    return getattr(metadata, field_name, None)
+                elif isinstance(metadata, dict):
+                    return metadata.get(field_name)
+                return None
+
+            source_session = get_metadata_field('source_session')
+
+            if source_session and source_session != 'import':  # 排除默认值
+                session_mapping[source_session] = row["id"]
+
+        logger.info("Source session mappings retrieved", mapping_count=len(session_mapping))
+        return session_mapping

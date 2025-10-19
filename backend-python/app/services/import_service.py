@@ -6,7 +6,7 @@ import uuid
 import random
 from app.models.import_models import (
     ImportRequest, ImportPreview, ImportTask, ImportProgress,
-    ImportTaskStatus
+    ImportTaskStatus, DuplicateSessionInfo, ImportValidationResult
 )
 from app.services.data_conversion_service import data_conversion_service
 from app.services.test_case_service import TestCaseService
@@ -45,10 +45,66 @@ class ImportService:
 
         logger.info("ImportService initialized")
 
+    async def check_duplicate_sessions(self, session_ids: List[str]) -> ImportValidationResult:
+        """检查重复会话"""
+        logger.info("Checking duplicate sessions", session_count=len(session_ids))
+
+        # 获取已存在的测试用例映射
+        existing_test_cases = await self.test_case_service.get_test_cases_by_source_session(session_ids)
+
+        # 分离有效会话和重复会话
+        valid_sessions = []
+        duplicate_sessions = []
+
+        for session_id in session_ids:
+            if session_id in existing_test_cases:
+                existing_info = existing_test_cases[session_id]
+                duplicate_info = DuplicateSessionInfo(
+                    session_id=session_id,
+                    existing_test_case_id=existing_info["test_case_id"],
+                    existing_test_case_name=existing_info["test_case_name"],
+                    import_date=existing_info["import_date"],
+                    owner=existing_info["owner"]
+                )
+                duplicate_sessions.append(duplicate_info)
+            else:
+                valid_sessions.append(session_id)
+
+        # 构建验证结果
+        total_count = len(session_ids)
+        duplicate_count = len(duplicate_sessions)
+        can_import_all = duplicate_count == 0
+
+        if duplicate_count == 0:
+            message = f"所有 {total_count} 个会话都可以导入，无重复"
+        elif duplicate_count == total_count:
+            message = f"所有 {total_count} 个会话都存在重复，无法导入任何新会话"
+        else:
+            message = f"发现 {duplicate_count} 个重复会话，{total_count - duplicate_count} 个新会话可以导入"
+
+        result = ImportValidationResult(
+            valid_sessions=valid_sessions,
+            duplicate_sessions=duplicate_sessions,
+            can_import_all=can_import_all,
+            total_count=total_count,
+            duplicate_count=duplicate_count,
+            message=message
+        )
+
+        logger.info("Duplicate check completed",
+                   total_count=total_count,
+                   duplicate_count=duplicate_count,
+                   valid_count=len(valid_sessions))
+
+        return result
+
     async def preview_import(self, request: ImportRequest) -> ImportPreview:
         """预览导入数据"""
         logger.info("Previewing import",
                    session_count=len(request.session_ids))
+
+        # 检查重复会话
+        validation_result = await self.check_duplicate_sessions(request.session_ids)
 
         preview_count = min(5, len(request.session_ids))
         preview_session_ids = request.session_ids[:preview_count]
@@ -79,23 +135,54 @@ class ImportService:
                     "has_user_rating": random.choice([True, False])
                 })
 
+        # 构建包含重复信息的预览消息
+        base_message = f"预览前 {preview_count} 个会话，共 {len(request.session_ids)} 个会话待导入"
+        if validation_result.duplicate_count > 0:
+            duplicate_message = f"，其中 {validation_result.duplicate_count} 个会话已存在"
+            message = base_message + duplicate_message
+        else:
+            message = base_message
+
         preview = ImportPreview(
             total_count=len(request.session_ids),
             preview_count=preview_count,
             session_ids=preview_session_ids,
             preview_data=preview_sessions,
-            message=f"预览前 {preview_count} 个会话，共 {len(request.session_ids)} 个会话待导入"
+            message=message,
+            duplicate_sessions=validation_result.duplicate_sessions,
+            validation_result=validation_result
         )
 
         logger.info("Import preview completed",
                    total_count=preview.total_count,
                    preview_count=preview.preview_count,
-                   preview_sessions_count=len(preview_sessions))
+                   preview_sessions_count=len(preview_sessions),
+                   duplicate_count=validation_result.duplicate_count)
 
         return preview
 
     async def execute_import(self, request: ImportRequest) -> ImportTask:
         """执行导入操作"""
+        # 检查重复会话
+        validation_result = await self.check_duplicate_sessions(request.session_ids)
+
+        # 如果没有有效会话，直接返回失败任务
+        if len(validation_result.valid_sessions) == 0:
+            task_id = f"IMPORT-{int(datetime.now().timestamp())}"
+            task = ImportTask(
+                task_id=task_id,
+                session_ids=request.session_ids,
+                status=ImportTaskStatus.FAILED,
+                total=len(request.session_ids),
+                processed=0,
+                failed=len(request.session_ids),
+                start_time=datetime.now(),
+                end_time=datetime.now(),
+                message="所有会话都已存在，无需重复导入"
+            )
+            self.tasks[task_id] = task
+            return task
+
         # 生成任务ID
         task_id = f"IMPORT-{int(datetime.now().timestamp())}"
 
@@ -104,15 +191,16 @@ class ImportService:
             "default_owner": request.default_owner,
             "default_priority": request.default_priority,
             "default_difficulty": request.default_difficulty,
-            "include_analysis": request.include_analysis
+            "include_analysis": request.include_analysis,
+            "validation_result": validation_result
         }
 
-        # 创建导入任务
+        # 创建导入任务（只处理有效会话）
         task = ImportTask(
             task_id=task_id,
-            session_ids=request.session_ids,
+            session_ids=validation_result.valid_sessions,
             status=ImportTaskStatus.PENDING,
-            total=len(request.session_ids),
+            total=len(validation_result.valid_sessions),
             processed=0,
             failed=0,
             start_time=datetime.now(),
@@ -125,6 +213,9 @@ class ImportService:
         logger.info("Import task created",
                    task_id=task_id,
                    total_sessions=task.total,
+                   original_count=len(request.session_ids),
+                   valid_count=len(validation_result.valid_sessions),
+                   duplicate_count=validation_result.duplicate_count,
                    config=config)
 
         # 异步执行导入
@@ -189,6 +280,9 @@ class ImportService:
                                          task_id=task_id,
                                          session_id=session_id,
                                          error=str(e))
+
+                    # 更新转换配置，设置正确的源会话ID
+                    conversion_config["source_session"] = session_id
 
                     # 转换为测试用例
                     test_case_create = await data_conversion_service.convert_session_to_test_case(

@@ -10,6 +10,23 @@ class ImportTaskStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
+class DuplicateSessionInfo(BaseModel):
+    """重复会话信息模型"""
+    session_id: str = Field(..., description="会话ID")
+    existing_test_case_id: str = Field(..., description="已存在的测试用例ID")
+    existing_test_case_name: str = Field(..., description="已存在的测试用例名称")
+    import_date: str = Field(..., description="原导入时间")
+    owner: str = Field(..., description="原测试用例负责人")
+
+class ImportValidationResult(BaseModel):
+    """导入验证结果模型"""
+    valid_sessions: List[str] = Field(..., description="有效会话ID列表")
+    duplicate_sessions: List[DuplicateSessionInfo] = Field(..., description="重复会话信息列表")
+    can_import_all: bool = Field(..., description="是否可以导入所有会话")
+    total_count: int = Field(..., description="总会话数")
+    duplicate_count: int = Field(..., description="重复会话数")
+    message: str = Field(..., description="验证结果消息")
+
 class ImportRequest(BaseModel):
     """导入请求模型"""
     session_ids: List[str] = Field(..., description="会话ID列表", alias="session_ids")
@@ -27,6 +44,8 @@ class ImportPreview(BaseModel):
     session_ids: List[str] = Field(..., description="预览的会话ID列表")
     message: str = Field(..., description="预览消息")
     preview_data: Optional[List[dict]] = Field(None, description="预览的会话数据")
+    duplicate_sessions: Optional[List[DuplicateSessionInfo]] = Field(None, description="重复会话信息")
+    validation_result: Optional[ImportValidationResult] = Field(None, description="验证结果")
 
 class ImportTask(BaseModel):
     """导入任务模型"""

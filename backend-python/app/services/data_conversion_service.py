@@ -107,7 +107,7 @@ class DataConversionService:
             "tags": self._generate_tags(session_data, session_analysis, default_config["auto_generate_tags"]),
             "version": "1.0",
             "created_date": datetime.now().isoformat(),
-            "source_session": session_data[0].session_id
+            "source_session": config.get("source_session") if config and config.get("source_session") else session_data[0].session_id
         }
 
         # 领域和难度
