@@ -16,6 +16,7 @@ function App() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/test-cases" element={<TestCasePage />} />
+          <Route path="/file-text" element={<TestCasePage />} />
         </Routes>
       </Content>
     </AppLayout>

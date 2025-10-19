@@ -11,17 +11,33 @@ from app.utils.logger import logger
 
 class TestCaseService:
     """测试用例服务类"""
+    _instance = None
+    _shared_service = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(TestCaseService, cls).__new__(cls)
+        return cls._instance
 
     def __init__(self):
         """初始化测试用例服务"""
+        # 如果已经有共享服务实例，直接使用
+        if TestCaseService._shared_service is not None:
+            self.df = TestCaseService._shared_service.df
+            self.id_counter = TestCaseService._shared_service.id_counter
+            return
+
         # 转换演示数据为DataFrame
         self.df = pd.DataFrame(MOCK_TEST_CASES)
 
         # 确保日期字段是datetime类型
-        self.df['created_date'] = pd.to_datetime(self.df['created_date'], format='ISO8601')
+        self.df['created_date'] = pd.to_datetime(self.df['metadata'].apply(lambda x: x.get('created_date')), format='ISO8601')
 
         # 生成ID计数器
         self.id_counter = max(int(tc['id'].split('-')[1]) for tc in MOCK_TEST_CASES)
+
+        # 保存为共享实例
+        TestCaseService._shared_service = self
 
         logger.info("TestCaseService initialized", record_count=len(self.df))
 
@@ -30,6 +46,8 @@ class TestCaseService:
         page: int = 1,
         page_size: int = 20,
         status: Optional[str] = None,
+        domain: Optional[str] = None,
+        priority: Optional[str] = None,
         search: Optional[str] = None
     ) -> Dict[str, Any]:
         """获取测试用例列表"""
@@ -37,13 +55,27 @@ class TestCaseService:
                    page=page,
                    page_size=page_size,
                    status=status,
+                   domain=domain,
+                   priority=priority,
                    search=search)
 
         filtered_df = self.df.copy()
 
-        # 状态筛选
+        # 状态筛选 - 兼容字典和对象两种格式
         if status:
-            filtered_df = filtered_df[filtered_df['status'] == status]
+            filtered_df = filtered_df[filtered_df['metadata'].apply(lambda x: (
+                getattr(x, 'status', None) if hasattr(x, 'status') else x.get('status')
+            )) == status]
+
+        # 领域筛选
+        if domain:
+            filtered_df = filtered_df[filtered_df['domain'] == domain]
+
+        # 优先级筛选 - 兼容字典和对象两种格式
+        if priority:
+            filtered_df = filtered_df[filtered_df['metadata'].apply(lambda x: (
+                getattr(x, 'priority', None) if hasattr(x, 'priority') else x.get('priority')
+            )) == priority]
 
         # 搜索
         if search:
@@ -63,21 +95,31 @@ class TestCaseService:
         end_idx = start_idx + page_size
         page_data = filtered_df.iloc[start_idx:end_idx]
 
-        # 转换为字典格式
+        # 转换为简化的字典格式用于列表显示 - 兼容字典和对象两种格式
         items = []
         for _, row in page_data.iterrows():
+            metadata = row["metadata"]
+
+            # 辅助函数，兼容字典和对象两种格式
+            def get_metadata_field(field_name):
+                if hasattr(metadata, field_name):
+                    return getattr(metadata, field_name, None)
+                elif isinstance(metadata, dict):
+                    return metadata.get(field_name)
+                return None
+
             items.append({
                 "id": row["id"],
                 "name": row["name"],
                 "description": row["description"],
-                "status": row["status"],
-                "owner": row["owner"],
-                "priority": row["priority"],
+                "status": get_metadata_field('status'),
+                "owner": get_metadata_field('owner'),
+                "priority": get_metadata_field('priority'),
                 "domain": row["domain"],
                 "difficulty": row["difficulty"],
-                "created_date": row["created_date"].isoformat() + "Z",
-                "updated_date": row.get("updated_date"),
-                "tags": row["tags"]
+                "created_date": get_metadata_field('created_date'),
+                "updated_date": get_metadata_field('updated_date'),
+                "tags": get_metadata_field('tags') or []
             })
 
         result = {
@@ -95,8 +137,8 @@ class TestCaseService:
 
         return result
 
-    async def get_test_case_by_id(self, test_case_id: str) -> Optional[TestCase]:
-        """根据ID获取测试用例"""
+    async def get_test_case_by_id(self, test_case_id: str) -> Optional[Dict[str, Any]]:
+        """根据ID获取测试用例（完整结构）"""
         logger.info("Getting test case by ID", test_case_id=test_case_id)
 
         test_case_data = self.df[self.df['id'] == test_case_id]
@@ -105,20 +147,8 @@ class TestCaseService:
             logger.warning("Test case not found", test_case_id=test_case_id)
             return None
 
-        row = test_case_data.iloc[0]
-        test_case = TestCase(
-            id=row["id"],
-            name=row["name"],
-            description=row["description"],
-            status=row["status"],
-            owner=row["owner"],
-            priority=row["priority"],
-            domain=row["domain"],
-            difficulty=row["difficulty"],
-            created_date=row["created_date"],
-            updated_date=row.get("updated_date"),
-            tags=row["tags"]
-        )
+        # 返回完整的测试用例数据
+        test_case = test_case_data.iloc[0].to_dict()
 
         logger.info("Test case retrieved", test_case_id=test_case_id)
         return test_case
@@ -128,17 +158,30 @@ class TestCaseService:
         self.id_counter += 1
         new_id = f"TC-{self.id_counter:04d}"
 
+        # 构建metadata结构
+        from app.models.test_case import TestCaseMetadata
+        metadata = TestCaseMetadata(
+            status=TestCaseStatus.DRAFT,
+            owner=request.owner,
+            priority=request.priority,
+            tags=request.tags,
+            version="1.0",
+            created_date=datetime.now().isoformat(),
+            updated_date=datetime.now().isoformat(),
+            source_session="import"
+        )
+
         new_test_case = TestCase(
             id=new_id,
             name=request.name,
             description=request.description,
-            status=TestCaseStatus.DRAFT,
-            owner=request.owner,
-            priority=request.priority,
+            metadata=metadata,
             domain=request.domain,
             difficulty=request.difficulty,
-            created_date=datetime.now(),
-            tags=request.tags
+            test_config=request.test_config,
+            input=request.input,
+            execution=request.execution,
+            analysis=request.analysis
         )
 
         # 添加到DataFrame
@@ -219,10 +262,28 @@ class TestCaseService:
         """获取测试用例统计信息"""
         logger.info("Getting test case statistics")
 
+        # 提取统计信息，兼容字典和对象两种格式
+        def get_status_value(metadata):
+            if hasattr(metadata, 'status'):
+                return getattr(metadata, 'status', None)
+            elif isinstance(metadata, dict):
+                return metadata.get('status')
+            return None
+
+        def get_priority_value(metadata):
+            if hasattr(metadata, 'priority'):
+                return getattr(metadata, 'priority', None)
+            elif isinstance(metadata, dict):
+                return metadata.get('priority')
+            return None
+
+        status_list = self.df['metadata'].apply(get_status_value)
+        priority_list = self.df['metadata'].apply(get_priority_value)
+
         stats = {
             "total_count": len(self.df),
-            "status_distribution": self.df['status'].value_counts().to_dict(),
-            "priority_distribution": self.df['priority'].value_counts().to_dict(),
+            "status_distribution": status_list.value_counts().to_dict(),
+            "priority_distribution": priority_list.value_counts().to_dict(),
             "difficulty_distribution": self.df['difficulty'].value_counts().to_dict(),
             "domain_distribution": self.df['domain'].value_counts().to_dict(),
         }
@@ -235,10 +296,20 @@ class TestCaseService:
         logger.info("Getting all tags")
 
         all_tags = []
-        for tags_list in self.df['tags']:
-            if isinstance(tags_list, list):
-                for tag in tags_list:
-                    if isinstance(tag, dict) and 'name' in tag:
+        for metadata in self.df['metadata']:
+            # 兼容字典和对象两种格式获取tags
+            if hasattr(metadata, 'tags'):
+                tags = getattr(metadata, 'tags', [])
+            elif isinstance(metadata, dict):
+                tags = metadata.get('tags', [])
+            else:
+                tags = []
+
+            if isinstance(tags, list):
+                for tag in tags:
+                    if hasattr(tag, 'name'):
+                        all_tags.append(tag.name)
+                    elif isinstance(tag, dict) and 'name' in tag:
                         all_tags.append(tag['name'])
 
         unique_tags = sorted(list(set(all_tags)))

@@ -17,6 +17,8 @@ async def get_test_cases(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页大小"),
     status: Optional[str] = Query(None, description="状态筛选"),
+    domain: Optional[str] = Query(None, description="领域筛选"),
+    priority: Optional[str] = Query(None, description="优先级筛选"),
     search: Optional[str] = Query(None, description="搜索关键词")
 ):
     """获取测试用例列表"""
@@ -25,6 +27,8 @@ async def get_test_cases(
             page=page,
             page_size=page_size,
             status=status,
+            domain=domain,
+            priority=priority,
             search=search
         )
 
@@ -32,6 +36,8 @@ async def get_test_cases(
                    page=page,
                    page_size=page_size,
                    status=status,
+                   domain=domain,
+                   priority=priority,
                    search=search,
                    results_count=len(result["items"]))
 
@@ -44,9 +50,9 @@ async def get_test_cases(
             detail="获取测试用例列表失败"
         )
 
-@router.get("/{test_case_id}", response_model=ApiResponse[TestCase])
+@router.get("/{test_case_id}", response_model=ApiResponse[dict])
 async def get_test_case_by_id(test_case_id: str):
-    """根据ID获取测试用例"""
+    """根据ID获取测试用例（完整结构）"""
     try:
         test_case = await test_case_service.get_test_case_by_id(test_case_id)
 
@@ -58,7 +64,7 @@ async def get_test_case_by_id(test_case_id: str):
             )
 
         logger.info("Test case retrieved", test_case_id=test_case_id)
-        return ApiResponse(success=True, data=test_case)
+        return ApiResponse(success=True, data={"test_case": test_case})
 
     except HTTPException:
         raise

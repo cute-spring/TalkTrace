@@ -44,7 +44,7 @@ export const historyService = {
 export const importService = {
   preview: (data: { sessionIds: string[] }) =>
     apiClient.post<ApiResponse>('/v1/import/preview', data),
-  execute: (data: { sessionIds: string[]; defaultOwner?: string; defaultPriority?: string }) =>
+  execute: (data: { session_ids: string[]; defaultOwner?: string; defaultPriority?: string; defaultDifficulty?: string; includeAnalysis?: boolean }) =>
     apiClient.post<ApiResponse>('/v1/import/execute', data),
   getProgress: (taskId: string) =>
     apiClient.get<ApiResponse>(`/v1/import/progress/${taskId}`),
@@ -55,11 +55,11 @@ export const importService = {
 // 测试用例相关API
 export const testCaseService = {
   getList: (params?: any) =>
-    apiClient.get<ApiResponse>('/v1/test-cases', { params }),
+    apiClient.get<ApiResponse>('/v1/test-cases/', { params }),
   getById: (id: string) =>
     apiClient.get<ApiResponse>(`/v1/test-cases/${id}`),
   create: (data: any) =>
-    apiClient.post<ApiResponse>('/v1/test-cases', data),
+    apiClient.post<ApiResponse>('/v1/test-cases/', data),
   update: (id: string, data: any) =>
     apiClient.put<ApiResponse>(`/v1/test-cases/${id}`, data),
   delete: (id: string) =>
@@ -67,7 +67,7 @@ export const testCaseService = {
   batchOperation: (data: { action: string; ids: string[]; data?: any }) =>
     apiClient.post<ApiResponse>('/v1/test-cases/batch', data),
   getStatistics: () =>
-    apiClient.get<ApiResponse>('/v1/test-cases/statistics'),
+    apiClient.get<ApiResponse>('/v1/test-cases/statistics/overview'),
   getTags: () =>
     apiClient.get<ApiResponse>('/v1/test-cases/tags'),
 }

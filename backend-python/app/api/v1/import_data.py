@@ -10,7 +10,14 @@ from app.models.common import ApiResponse
 from app.utils.logger import logger
 
 router = APIRouter()
-import_service = ImportService()
+
+# 使用单例模式确保服务实例一致性
+def get_import_service():
+    """获取导入服务单例实例"""
+    return ImportService()
+
+# 获取共享的导入服务实例
+import_service = get_import_service()
 
 @router.post("/preview", response_model=ApiResponse[ImportPreview])
 async def preview_import(request: ImportRequest):

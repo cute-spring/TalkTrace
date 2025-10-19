@@ -55,10 +55,14 @@ const HistoryPage: React.FC = () => {
       try {
         const response = await historyService.getModels()
         // 确保返回的数据是数组
-        if (Array.isArray(response.data)) {
-          setModels(response.data)
+        const modelsData = response.data
+        if (Array.isArray(modelsData)) {
+          setModels(modelsData)
+        } else if (modelsData && typeof modelsData === 'object' && Array.isArray(modelsData.data)) {
+          // 处理嵌套的数据结构
+          setModels(modelsData.data)
         } else {
-          console.warn('Models API returned non-array data:', response.data)
+          console.warn('Models API returned unexpected data structure:', response.data)
           setModels(['gpt-4o-mini', 'gpt-4o', 'claude-3-sonnet'])
         }
       } catch (error) {
@@ -77,7 +81,10 @@ const HistoryPage: React.FC = () => {
     setLoading(true)
     try {
       const response = await historyService.search(filters)
-      setData(response.data)
+
+      // Fix: The actual data is nested in response.data.data (double nested)
+      const actualData = response.data.data
+      setData(actualData)
     } catch (error) {
       message.error('获取历史记录失败')
       console.error('Failed to fetch history:', error)
@@ -199,7 +206,20 @@ const HistoryPage: React.FC = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (text) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
+      render: (text) => {
+        try {
+          // Handle date format with both +00:00 and Z by normalizing it
+          const normalizedDate = text ? text.replace('+00:00Z', 'Z') : text
+          const parsed = dayjs(normalizedDate)
+          if (parsed.isValid()) {
+            return parsed.format('YYYY-MM-DD HH:mm:ss')
+          } else {
+            return text || 'Invalid Date'
+          }
+        } catch (error) {
+          return text || 'Invalid Date'
+        }
+      },
     },
     {
       title: '操作',
@@ -266,10 +286,10 @@ const HistoryPage: React.FC = () => {
             <Select
               placeholder="选择评分范围"
               style={{ width: 150, marginLeft: 8 }}
-              value={filters.ratingRange}
+              value={filters.ratingRange || undefined}
               onChange={(value) => setFilters(prev => ({ ...prev, ratingRange: value }))}
               options={[
-                { label: '全部', value: null },
+                { label: '全部', value: undefined },
                 { label: '1-2星', value: [1, 2] },
                 { label: '3-4星', value: [3, 4] },
                 { label: '5星', value: [5, 5] },
@@ -330,7 +350,7 @@ const HistoryPage: React.FC = () => {
           rowSelection={rowSelection}
           pagination={{
             current: data?.page,
-            pageSize: data?.pageSize,
+            pageSize: data?.page_size || 20,
             total: data?.total,
             showSizeChanger: true,
             showQuickJumper: true,
