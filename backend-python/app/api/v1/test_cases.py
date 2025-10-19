@@ -6,6 +6,7 @@ from app.services.test_case_service import TestCaseService
 from app.models.test_case import (
     TestCase, TestCaseCreate, TestCaseUpdate, BatchOperation
 )
+from app.models.response_models import TestCaseResponse
 from app.models.common import ApiResponse
 from app.utils.logger import logger
 

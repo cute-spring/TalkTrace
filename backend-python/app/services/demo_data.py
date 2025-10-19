@@ -281,6 +281,119 @@ MOCK_TEST_CASES = [
             "analyzed_by": "frontend@company.com",
             "analysis_date": "2024-01-17T09:15:00Z"
         }
+    },
+    {
+        "id": "TC-0003",
+        "name": "测试用例1",
+        "description": "完整的测试用例示例，包含所有必要字段",
+        "metadata": {
+            "status": "draft",
+            "owner": "user@example.com",
+            "priority": "medium",
+            "tags": [{"name": "finance", "color": "#1890ff"}, {"name": "multi-turn", "color": "#722ed1"}],
+            "version": "1.0",
+            "created_date": "2024-01-15T00:00:00Z",
+            "updated_date": "2024-01-16T00:00:00Z",
+            "source_session": "session_123"
+        },
+        "domain": "finance",
+        "difficulty": "medium",
+        "test_config": {
+            "model": {
+                "name": "gpt-4o-mini",
+                "params": {
+                    "temperature": 0.0,
+                    "max_tokens": 512
+                }
+            },
+            "prompts": {
+                "system": "You are a helpful assistant specializing in financial advice. Always provide accurate, clear, and actionable information.",
+                "user_instruction": "Using the provided documents, answer the user's question comprehensively and cite your sources."
+            }
+        },
+        "input": {
+            "current_query": {
+                "text": "能再解释一下第一个方案的具体风险吗？",
+                "timestamp": "2024-01-15T10:02:00Z"
+            },
+            "conversation_history": [
+                {
+                    "turn": 1,
+                    "role": "user",
+                    "query": "帮我比较一下投资基金和股票投资的优缺点",
+                    "timestamp": "2024-01-15T10:00:00Z"
+                },
+                {
+                    "turn": 2,
+                    "role": "assistant",
+                    "response": "投资基金的优势包括...",
+                    "retrieved_chunks": ["CH-1001", "CH-1002"],
+                    "timestamp": "2024-01-15T10:00:01Z"
+                }
+            ],
+            "current_retrieved_chunks": [
+                {
+                    "id": "CH-1005",
+                    "title": "投资基金风险管理指南",
+                    "source": "https://internal.com/finance/fund-risk",
+                    "content": "投资基金的具体风险包括：...",
+                    "metadata": {
+                        "publish_date": "2023-06-01",
+                        "effective_date": "2023-06-01",
+                        "expiration_date": "2024-12-31",
+                        "chunk_type": "conceptual",
+                        "confidence": 0.92,
+                        "retrieval_rank": 1
+                    }
+                }
+            ]
+        },
+        "execution": {
+            "actual": {
+                "response": "投资基金的具体风险包括市场风险...",
+                "performance_metrics": {
+                    "total_response_time": 2.1,
+                    "retrieval_time": 0.3,
+                    "generation_time": 1.8,
+                    "tokens_used": 345,
+                    "chunks_considered": 5
+                },
+                "retrieval_quality": {
+                    "max_similarity": 0.92,
+                    "avg_similarity": 0.78,
+                    "diversity_score": 0.65
+                }
+            },
+            "user_feedback": {
+                "rating": 3,
+                "category": "accuracy",
+                "comment": "回答列出了风险类型，但没有具体说明如何识别和应对这些风险",
+                "concern": "感觉回答比较模板化，缺乏针对性的建议",
+                "suggested_improvement": "希望能举例说明每种风险在什么情况下会发生",
+                "feedback_date": "2024-01-15T10:02:00Z",
+                "feedback_source": "user"
+            }
+        },
+        "analysis": {
+            "issue_type": "context_understanding",
+            "root_cause": "未能正确解析'第一个方案'在对话历史中的指代",
+            "expected_answer": "您询问的'第一个方案'（投资基金）的具体风险包括：...",
+            "acceptance_criteria": "1. 必须正确识别'第一个方案'指代投资基金...",
+            "quality_scores": {
+                "context_understanding": 2,
+                "answer_accuracy": 4,
+                "answer_completeness": 3,
+                "clarity": 3,
+                "citation_quality": 4
+            },
+            "optimization_suggestions": [
+                "改进对话状态跟踪，准确识别历史指代",
+                "在回答中增加具体示例提高实用性"
+            ],
+            "notes": "用户明显在延续之前的对话，但AI未能充分理解上下文。",
+            "analyzed_by": "expert@company.com",
+            "analysis_date": "2024-01-16"
+        }
     }
 ]
 
