@@ -352,24 +352,24 @@ const HistoryPage: React.FC = () => {
           </div>
 
           <div>
-            <Text strong>评分范围：</Text>
+            <Text strong>{t('history.rating')}：</Text>
             <Select
-              placeholder="选择评分范围"
+              placeholder={t('history.selectRatingRange')}
               style={{ width: 150, marginLeft: 8 }}
               value={filters.ratingRange || undefined}
               onChange={(value) => setFilters(prev => ({ ...prev, ratingRange: value }))}
               options={[
-                { label: '全部', value: undefined },
-                { label: '1-2星', value: [1, 2] },
-                { label: '3-4星', value: [3, 4] },
-                { label: '5星', value: [5, 5] },
+                { label: t('common.all'), value: undefined },
+                { label: t('history.rating1-2'), value: [1, 2] },
+                { label: t('history.rating3-4'), value: [3, 4] },
+                { label: t('history.rating5'), value: [5, 5] },
               ]}
             />
           </div>
 
           <div>
             <Input
-              placeholder="关键词搜索"
+              placeholder={t('history.searchPlaceholder')}
               style={{ width: 200 }}
               value={filters.keywords}
               onChange={(e) => setFilters(prev => ({ ...prev, keywords: e.target.value }))}

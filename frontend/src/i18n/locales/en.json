@@ -21,9 +21,13 @@
     "model": "Model",
     "selectModel": "Select Model",
     "rating": "Rating",
+    "selectRatingRange": "Select Rating Range",
     "search": "Search",
     "reset": "Reset",
     "export": "Export",
+    "rating1-2": "1-2 Stars",
+    "rating3-4": "3-4 Stars",
+    "rating5": "5 Stars",
     "columns": {
       "sessionId": "Session ID",
       "userQuery": "User Query",
@@ -113,6 +117,8 @@
     "noData": "No data available",
     "selectAll": "Select All",
     "clearSelection": "Clear Selection",
-    "view": "View Details"
+    "view": "View Details",
+    "all": "All",
+    "actions": "Actions"
   }
 }

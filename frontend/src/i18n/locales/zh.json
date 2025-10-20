@@ -21,9 +21,13 @@
     "model": "模型",
     "selectModel": "选择模型",
     "rating": "评分",
+    "selectRatingRange": "选择评分范围",
     "search": "搜索",
     "reset": "重置",
     "export": "导出",
+    "rating1-2": "1-2星",
+    "rating3-4": "3-4星",
+    "rating5": "5星",
     "columns": {
       "sessionId": "会话ID",
       "userQuery": "用户查询",
@@ -113,6 +117,8 @@
     "noData": "暂无数据",
     "selectAll": "全选",
     "clearSelection": "清空选择",
-    "view": "查看详情"
+    "view": "查看详情",
+    "all": "全部",
+    "actions": "操作"
   }
 }
