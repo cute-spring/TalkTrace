@@ -13,8 +13,34 @@ MOCK_HISTORY_DATA = [
         "model_id": "gpt-4o-mini",
         "created_at": "2024-01-15T10:00:00Z",
         "retrieval_chunks": [
-            {"id": "CH-1001", "title": "投资基金基础知识", "content": "投资基金是一种集合投资工具..."},
-            {"id": "CH-1002", "title": "股票投资指南", "content": "股票是公司的所有权凭证..."},
+            {
+                "id": "CH-1001",
+                "title": "投资基金基础知识",
+                "source": "https://internal.com/finance/fund-basics",
+                "content": "投资基金是一种集合投资工具，通过专业基金经理管理资金，投资于多种证券组合。",
+                "metadata": {
+                    "publish_date": "2023-06-01",
+                    "effective_date": "2023-06-01",
+                    "expiration_date": "2024-12-31",
+                    "chunk_type": "conceptual",
+                    "confidence": 0.89,
+                    "retrieval_rank": 1
+                }
+            },
+            {
+                "id": "CH-1002",
+                "title": "股票投资指南",
+                "source": "https://internal.com/finance/stock-guide",
+                "content": "股票是公司的所有权凭证，代表投资者对公司的部分所有权，可以分享公司利润。",
+                "metadata": {
+                    "publish_date": "2023-06-15",
+                    "effective_date": "2023-06-15",
+                    "expiration_date": "2024-12-31",
+                    "chunk_type": "guide",
+                    "confidence": 0.85,
+                    "retrieval_rank": 2
+                }
+            },
         ],
     },
     {
@@ -25,7 +51,20 @@ MOCK_HISTORY_DATA = [
         "model_id": "gpt-4o",
         "created_at": "2024-01-15T11:00:00Z",
         "retrieval_chunks": [
-            {"id": "CH-2001", "title": "AI基础概念", "content": "人工智能是指让机器模拟人类智能..."},
+            {
+                "id": "CH-2001",
+                "title": "AI基础概念",
+                "source": "https://internal.com/tech/ai-basics",
+                "content": "人工智能是指让机器模拟人类智能，执行通常需要人类智能的任务。",
+                "metadata": {
+                    "publish_date": "2023-07-01",
+                    "effective_date": "2023-07-01",
+                    "expiration_date": "2025-06-30",
+                    "chunk_type": "conceptual",
+                    "confidence": 0.91,
+                    "retrieval_rank": 1
+                }
+            },
         ],
     },
     {
@@ -36,7 +75,20 @@ MOCK_HISTORY_DATA = [
         "model_id": "gpt-4o-mini",
         "created_at": "2024-01-15T12:00:00Z",
         "retrieval_chunks": [
-            {"id": "CH-3001", "title": "React Router配置", "content": "React Router是React应用的路由库..."},
+            {
+                "id": "CH-3001",
+                "title": "React Router配置",
+                "source": "https://docs.react-router.com",
+                "content": "React Router是React应用的标准路由库，安装命令：npm install react-router-dom@6。",
+                "metadata": {
+                    "publish_date": "2023-12-01",
+                    "effective_date": "2023-12-01",
+                    "expiration_date": "2024-12-31",
+                    "chunk_type": "tutorial",
+                    "confidence": 0.95,
+                    "retrieval_rank": 1
+                }
+            },
         ],
     },
     {
@@ -47,7 +99,20 @@ MOCK_HISTORY_DATA = [
         "model_id": "claude-3-sonnet",
         "created_at": "2024-01-15T13:00:00Z",
         "retrieval_chunks": [
-            {"id": "CH-4001", "title": "Python装饰器详解", "content": "装饰器本质上是一个函数..."},
+            {
+                "id": "CH-4001",
+                "title": "Python装饰器详解",
+                "source": "https://internal.com/tech/python-decorators",
+                "content": "装饰器本质上是一个函数，它接受另一个函数作为参数并返回一个新的函数。",
+                "metadata": {
+                    "publish_date": "2023-08-15",
+                    "effective_date": "2023-08-15",
+                    "expiration_date": "2025-08-15",
+                    "chunk_type": "tutorial",
+                    "confidence": 0.88,
+                    "retrieval_rank": 1
+                }
+            },
         ],
     },
     {
@@ -58,7 +123,20 @@ MOCK_HISTORY_DATA = [
         "model_id": "gpt-4o",
         "created_at": "2024-01-15T14:00:00Z",
         "retrieval_chunks": [
-            {"id": "CH-5001", "title": "微服务架构原理", "content": "微服务架构提倡将单一应用程序..."},
+            {
+                "id": "CH-5001",
+                "title": "微服务架构原理",
+                "source": "https://internal.com/tech/microservices-principles",
+                "content": "微服务架构提倡将单一应用程序拆分为一组小型服务，每个服务运行在自己的进程中，服务之间通过轻量级通信机制进行通信。",
+                "metadata": {
+                    "publish_date": "2023-09-01",
+                    "effective_date": "2023-09-01",
+                    "expiration_date": "2025-09-01",
+                    "chunk_type": "architectural",
+                    "confidence": 0.87,
+                    "retrieval_rank": 1
+                }
+            },
         ],
     },
 ]
@@ -400,15 +478,94 @@ MOCK_TEST_CASES = [
 # 可用模型列表
 AVAILABLE_MODELS = ["gpt-4o-mini", "gpt-4o", "claude-3-sonnet"]
 
+# 主题映射到完整的检索片段信息
+TOPIC_MAPPINGS = {
+    "机器学习算法原理": {
+        "source": "https://internal.com/tech/ml-algorithms",
+        "chunk_type": "conceptual",
+        "content": "机器学习算法是人工智能的核心，包括监督学习、无监督学习和强化学习等主要类型。监督学习使用标记数据训练模型，无监督学习发现数据模式，强化学习通过试错学习最优策略。",
+        "publish_date": "2023-08-15",
+        "effective_date": "2023-08-15",
+        "expiration_date": "2025-08-15"
+    },
+    "数据库优化技巧": {
+        "source": "https://internal.com/tech/database-optimization",
+        "chunk_type": "guide",
+        "content": "数据库优化技巧包括索引优化、查询优化、表结构设计和硬件配置等方面。合理创建索引可以显著提升查询性能，避免全表扫描。查询优化需要理解执行计划，减少不必要的连接和子查询。",
+        "publish_date": "2023-07-20",
+        "effective_date": "2023-07-20",
+        "expiration_date": "2025-07-20"
+    },
+    "前端性能优化": {
+        "source": "https://internal.com/tech/frontend-performance",
+        "chunk_type": "tutorial",
+        "content": "前端性能优化包括代码压缩、资源合并、懒加载、缓存策略等技术。通过减少HTTP请求、压缩静态资源、使用CDN等方式可以显著提升页面加载速度和用户体验。",
+        "publish_date": "2023-09-10",
+        "effective_date": "2023-09-10",
+        "expiration_date": "2025-09-10"
+    },
+    "云计算服务比较": {
+        "source": "https://internal.com/tech/cloud-comparison",
+        "chunk_type": "analysis",
+        "content": "云计算服务主要包括IaaS、PaaS、SaaS三种模式。AWS、Azure、Google Cloud是主要服务商，各有优势。AWS服务最全面，Azure企业集成好，Google Cloud在AI和数据分析方面领先。",
+        "publish_date": "2023-10-05",
+        "effective_date": "2023-10-05",
+        "expiration_date": "2025-10-05"
+    },
+    "网络安全最佳实践": {
+        "source": "https://internal.com/tech/security-practices",
+        "chunk_type": "guide",
+        "content": "网络安全最佳实践包括使用强密码、多因素认证、定期更新软件、网络隔离、数据加密等措施。企业需要建立完整的安全体系，包括预防、检测、响应和恢复四个环节。",
+        "publish_date": "2023-06-15",
+        "effective_date": "2023-06-15",
+        "expiration_date": "2025-06-15"
+    },
+    "移动开发框架选择": {
+        "source": "https://internal.com/tech/mobile-frameworks",
+        "chunk_type": "comparison",
+        "content": "移动开发框架选择需要考虑性能、开发效率、维护成本等因素。React Native适合跨平台开发，Flutter性能优异，原生开发体验最佳。需要根据项目需求和团队技术栈选择合适的框架。",
+        "publish_date": "2023-11-20",
+        "effective_date": "2023-11-20",
+        "expiration_date": "2025-11-20"
+    },
+    "API设计原则": {
+        "source": "https://internal.com/tech/api-design",
+        "chunk_type": "conceptual",
+        "content": "API设计原则包括RESTful设计、版本控制、错误处理、安全认证、限流熔断等方面。好的API应该简洁、一致、可靠，并提供清晰的文档和错误信息。",
+        "publish_date": "2023-08-01",
+        "effective_date": "2023-08-01",
+        "expiration_date": "2025-08-01"
+    },
+    "代码重构方法": {
+        "source": "https://internal.com/tech/refactoring-methods",
+        "chunk_type": "tutorial",
+        "content": "代码重构方法包括提取函数、重构类、优化算法、消除重复代码等。重构应该保持功能不变，改善代码结构和可读性。需要充分测试确保重构不引入新的bug。",
+        "publish_date": "2023-09-25",
+        "effective_date": "2023-09-25",
+        "expiration_date": "2025-09-25"
+    },
+    "项目管理工具": {
+        "source": "https://internal.com/tech/project-management-tools",
+        "chunk_type": "comparison",
+        "content": "项目管理工具包括Jira、Trello、Asana、Monday等。Jira功能强大适合敏捷开发，Trello简单直观适合小型项目，Asana协作功能突出。选择工具需要考虑团队规模、项目复杂度和预算等因素。",
+        "publish_date": "2023-07-10",
+        "effective_date": "2023-07-10",
+        "expiration_date": "2025-07-10"
+    },
+    "DevOps实践指南": {
+        "source": "https://internal.com/tech/devops-guide",
+        "chunk_type": "guide",
+        "content": "DevOps实践指南包括持续集成、持续部署、基础设施即代码、监控告警等核心实践。通过自动化工具链和标准化流程，提高软件交付速度和质量，促进开发和运维协作。",
+        "publish_date": "2023-10-15",
+        "effective_date": "2023-10-15",
+        "expiration_date": "2025-10-15"
+    }
+}
+
 def generate_more_history_data(count: int = 20) -> List[Dict[str, Any]]:
     """生成更多历史记录数据用于测试"""
     base_time = datetime.now() - timedelta(days=7)
-    topics = [
-        "机器学习算法原理", "数据库优化技巧", "前端性能优化", "云计算服务比较",
-        "网络安全最佳实践", "移动开发框架选择", "API设计原则", "代码重构方法",
-        "项目管理工具", "DevOps实践指南"
-    ]
-
+    topics = list(TOPIC_MAPPINGS.keys())
     models = AVAILABLE_MODELS
 
     data = []
@@ -416,6 +573,8 @@ def generate_more_history_data(count: int = 20) -> List[Dict[str, Any]]:
         session_time = base_time + timedelta(hours=random.randint(0, 168))
         topic = random.choice(topics)
         model = random.choice(models)
+        topic_info = TOPIC_MAPPINGS[topic]
+        confidence = round(random.uniform(0.80, 0.96), 2)
 
         data.append({
             "session_id": f"session_gen_{i+1:04d}",
@@ -425,7 +584,20 @@ def generate_more_history_data(count: int = 20) -> List[Dict[str, Any]]:
             "model_id": model,
             "created_at": session_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "retrieval_chunks": [
-                {"id": f"CH-{i+1:04d}-1", "title": f"{topic}基础", "content": f"{topic}的基础知识..."},
+                {
+                    "id": f"CH-{i+1:04d}-1",
+                    "title": f"{topic}详解",
+                    "source": topic_info["source"],
+                    "content": topic_info["content"],
+                    "metadata": {
+                        "publish_date": topic_info["publish_date"],
+                        "effective_date": topic_info["effective_date"],
+                        "expiration_date": topic_info["expiration_date"],
+                        "chunk_type": topic_info["chunk_type"],
+                        "confidence": confidence,
+                        "retrieval_rank": 1
+                    }
+                },
             ],
         })
 

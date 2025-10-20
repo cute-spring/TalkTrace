@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING
 from datetime import datetime
 from enum import Enum
+
+if TYPE_CHECKING:
+    from typing import _ForwardRef  # Python 3.11+ compatibility
 
 class TestCaseStatus(str, Enum):
     """测试用例状态枚举"""
@@ -58,7 +61,7 @@ class TurnRecord(BaseModel):
     role: str  # "user" | "assistant" | "system"
     query: Optional[str] = None
     response: Optional[str] = None
-    retrieved_chunks: Optional[List[str]] = None
+    retrieved_chunks: Optional[List[Union[str, 'RetrievedChunk']]] = Field(default=None)
     timestamp: str
 
 class CurrentQuery(BaseModel):

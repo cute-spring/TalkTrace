@@ -1,6 +1,6 @@
 """API响应模型，用于转换为前端期望的camelCase格式"""
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from app.models.test_case import (
     TestCase, TestCaseStatus, PriorityLevel, DifficultyLevel, Tag,
@@ -75,7 +75,7 @@ class ConversationHistoryResponse(BaseModel):
     role: str
     query: Optional[str] = None
     response: Optional[str] = None
-    retrieved_chunks: Optional[List[str]] = Field(None, alias="retrievedChunks")
+    retrieved_chunks: Optional[List[Union[str, 'RetrievedChunkResponse']]] = Field(None, alias="retrievedChunks")
     timestamp: str
 
 class CurrentQueryResponse(BaseModel):
@@ -175,6 +175,35 @@ class TestCaseResponse(BaseModel):
     execution: ExecutionResponse = Field(..., alias="execution")
     analysis: Optional[AnalysisResponse] = Field(None, alias="analysis")
 
+    @staticmethod
+    def _process_conversation_retrieved_chunks(retrieved_chunks):
+        """处理对话历史中的检索片段，支持字符串和对象两种格式"""
+        if not retrieved_chunks:
+            return []
+
+        processed_chunks = []
+        for chunk in retrieved_chunks:
+            if isinstance(chunk, str):
+                # 如果是字符串，保持原样
+                processed_chunks.append(chunk)
+            elif hasattr(chunk, 'id') and hasattr(chunk, 'title'):
+                # 如果是RetrievedChunk对象，转换为响应格式
+                processed_chunks.append(RetrievedChunkResponse(
+                    id=chunk.id,
+                    title=chunk.title,
+                    source=chunk.source,
+                    content=chunk.content,
+                    metadata=ChunkMetadataResponse(
+                        publish_date=getattr(chunk.metadata, 'publish_date', None),
+                        effective_date=getattr(chunk.metadata, 'effective_date', None),
+                        expiration_date=getattr(chunk.metadata, 'expiration_date', None),
+                        chunk_type=getattr(chunk.metadata, 'chunk_type', None),
+                        confidence=getattr(chunk.metadata, 'confidence', 0.0),
+                        retrieval_rank=getattr(chunk.metadata, 'retrieval_rank', 1)
+                    )
+                ))
+        return processed_chunks
+
     @classmethod
     def from_test_case(cls, test_case: TestCase) -> "TestCaseResponse":
         """从内部TestCase模型转换为前端响应格式"""
@@ -226,7 +255,7 @@ class TestCaseResponse(BaseModel):
                         role=turn.role,
                         query=turn.query,
                         response=turn.response,
-                        retrieved_chunks=turn.retrieved_chunks,
+                        retrieved_chunks=self._process_conversation_retrieved_chunks(turn.retrieved_chunks),
                         timestamp=turn.timestamp
                     ) for turn in test_case.input.conversation_history
                 ],

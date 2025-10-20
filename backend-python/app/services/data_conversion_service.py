@@ -389,7 +389,7 @@ class DataConversionService:
 
         # 构建对话历史（包含上下文重建）
         conversation_history = self._build_conversation_history_with_context(
-            session_data, analysis
+            session_data, analysis, retrieval_chunks_map
         )
 
         # 构建当前检索片段
@@ -407,14 +407,15 @@ class DataConversionService:
     def _build_conversation_history_with_context(
         self,
         session_data: List[ConversationRow],
-        analysis: Dict[str, Any]
+        analysis: Dict[str, Any],
+        retrieval_chunks_map: Dict[str, RetrievalChunkRow] = None
     ) -> List[TurnRecord]:
         """构建包含上下文信息的对话历史"""
         conversation_history = []
         turn = 1
 
         # 获取所有对话轮次
-        dialog_turns = self._extract_dialogue_turns(session_data)
+        dialog_turns = self._extract_dialogue_turns(session_data, retrieval_chunks_map)
 
         for turn_data in dialog_turns:
             # 处理上下文引用
@@ -437,7 +438,7 @@ class DataConversionService:
 
         return conversation_history
 
-    def _extract_dialogue_turns(self, session_data: List[ConversationRow]) -> List[Dict[str, Any]]:
+    def _extract_dialogue_turns(self, session_data: List[ConversationRow], retrieval_chunks_map: Dict[str, RetrievalChunkRow] = None) -> List[Dict[str, Any]]:
         """提取对话轮次"""
         dialog_turns = []
         current_turn = {}
@@ -448,18 +449,23 @@ class DataConversionService:
                 if current_turn.get("role") == "assistant":
                     dialog_turns.append(current_turn)
 
+                # 构建检索片段对象列表（如果提供了映射表）
+                retrieved_chunks = []
+                if retrieval_chunks_map and msg.retrieval_chunk_ids:
+                    retrieved_chunks = self._build_retrieved_chunks(msg.retrieval_chunk_ids, retrieval_chunks_map)
+
                 # 开始新的用户轮次
                 current_turn = {
                     "role": "user",
                     "query": msg.content,
-                    "retrieved_chunks": msg.retrieval_chunk_ids or [],
+                    "retrieved_chunks": retrieved_chunks,
                     "timestamp": msg.timestamp.isoformat()
                 }
             elif msg.message_type == "assistant" and current_turn.get("role") == "user":
                 # 添加AI回复到当前轮次
                 current_turn["role"] = "assistant"
                 current_turn["response"] = msg.content
-                current_turn["retrieved_chunks"] = msg.retrieval_chunk_ids or []
+                # AI回复时不重新设置retrieved_chunks，保持用户查询时的检索片段
                 current_turn["timestamp"] = msg.timestamp.isoformat()
                 dialog_turns.append(current_turn)
                 current_turn = {}
