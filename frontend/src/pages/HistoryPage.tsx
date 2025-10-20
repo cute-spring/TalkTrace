@@ -122,6 +122,7 @@ const HistoryPage: React.FC = () => {
     Modal.info({
       title: t('history.modal.sessionId'),
       width: 1000,
+      okText: t('common.ok'),
       content: (
         <div style={{ marginTop: 16 }}>
           <div style={{ marginBottom: 16 }}>
