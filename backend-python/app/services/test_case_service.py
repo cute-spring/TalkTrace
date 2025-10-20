@@ -155,6 +155,21 @@ class TestCaseService:
 
     async def create_test_case(self, request: TestCaseCreate) -> TestCase:
         """创建测试用例"""
+        # 检查是否有相同的source_session已存在
+        if hasattr(request, 'metadata') and hasattr(request.metadata, 'source_session'):
+            source_session = request.metadata.source_session
+            if source_session and source_session != "import":
+                # 检查是否已存在相同source_session的测试用例
+                existing_case = self.get_test_case_by_source_session(source_session)
+                if existing_case:
+                    logger.warning(
+                        "Test case with same source_session already exists",
+                        source_session=source_session,
+                        existing_test_case_id=existing_case["id"],
+                        existing_test_case_name=existing_case["name"]
+                    )
+                    raise ValueError(f"测试用例已存在：源会话ID '{source_session}' 对应的测试用例 '{existing_case['name']}' (ID: {existing_case['id']}) 已存在")
+
         self.id_counter += 1
         new_id = f"TC-{self.id_counter:04d}"
 
@@ -168,7 +183,7 @@ class TestCaseService:
             version="1.0",
             created_date=datetime.now().isoformat(),
             updated_date=datetime.now().isoformat(),
-            source_session="import"
+            source_session=getattr(request.metadata, 'source_session', 'import') if hasattr(request, 'metadata') else 'import'
         )
 
         new_test_case = TestCase(
@@ -189,7 +204,7 @@ class TestCaseService:
         new_df = pd.DataFrame([new_row])
         self.df = pd.concat([self.df, new_df], ignore_index=True)
 
-        logger.info("Test case created", test_case_id=new_id, name=request.name)
+        logger.info("Test case created", test_case_id=new_id, name=request.name, source_session=metadata.source_session)
         return new_test_case
 
     async def update_test_case(self, test_case_id: str, request: TestCaseUpdate) -> Optional[TestCase]:
@@ -353,6 +368,36 @@ class TestCaseService:
                    requested_count=len(session_ids))
 
         return session_mapping
+
+    def get_test_case_by_source_session(self, source_session: str) -> Optional[Dict[str, Any]]:
+        """根据源会话ID查找测试用例"""
+        logger.info("Looking for test case by source session", source_session=source_session)
+
+        for _, row in self.df.iterrows():
+            metadata = row["metadata"]
+            # 兼容字典和对象两种格式获取source_session
+            def get_metadata_field(field_name):
+                if hasattr(metadata, field_name):
+                    return getattr(metadata, field_name, None)
+                elif isinstance(metadata, dict):
+                    return metadata.get(field_name)
+                return None
+
+            existing_source_session = get_metadata_field('source_session')
+            if existing_source_session == source_session:
+                logger.info("Found existing test case for source session",
+                           source_session=source_session,
+                           test_case_id=row["id"],
+                           test_case_name=row["name"])
+                return {
+                    "id": row["id"],
+                    "name": row["name"],
+                    "owner": get_metadata_field('owner') or 'unknown',
+                    "created_date": get_metadata_field('created_date') or 'unknown'
+                }
+
+        logger.info("No existing test case found for source session", source_session=source_session)
+        return None
 
     async def get_source_session_mapping(self) -> Dict[str, str]:
         """获取所有源会话ID到测试用例ID的映射"""

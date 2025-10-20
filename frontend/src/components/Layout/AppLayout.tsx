@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Layout, Menu, Typography } from 'antd'
 import {
   HistoryOutlined,
@@ -7,6 +8,7 @@ import {
   FileTextOutlined,
   BarChartOutlined,
 } from '@ant-design/icons'
+import LanguageToggle from '../LanguageToggle'
 
 const { Header, Sider } = Layout
 const { Title } = Typography
@@ -15,27 +17,28 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
 
   const menuItems = [
     {
       key: '/history',
       icon: <HistoryOutlined />,
-      label: '历史记录查询',
+      label: t('menu.history'),
     },
     {
       key: '/import',
       icon: <ImportOutlined />,
-      label: '数据导入',
+      label: t('menu.import'),
     },
     {
       key: '/test-cases',
       icon: <FileTextOutlined />,
-      label: '测试用例管理',
+      label: t('menu.testCases'),
     },
     {
       key: '/analytics',
       icon: <BarChartOutlined />,
-      label: '统计分析',
+      label: t('menu.analytics'),
     },
   ]
 
@@ -53,6 +56,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         width={240}
         style={{
           background: '#001529',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <div style={{
@@ -65,7 +70,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           fontWeight: 'bold',
           borderBottom: '1px solid #1f1f1f'
         }}>
-          {collapsed ? 'TT' : 'Talk Trace'}
+          {collapsed ? 'TT' : t('app.name')}
         </div>
 
         <Menu
@@ -74,7 +79,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={handleMenuClick}
-          style={{ borderRight: 0 }}
+          style={{
+            borderRight: 0,
+            flex: 1,
+          }}
         />
       </Sider>
 
@@ -87,12 +95,22 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           alignItems: 'center'
         }}>
           <Title level={4} style={{ margin: 0, color: '#262626' }}>
-            测试样本管理平台
+            {t('app.title')}
           </Title>
         </Header>
 
         {children}
       </Layout>
+
+      {/* Language toggle positioned at absolute bottom-left of the page */}
+      <div style={{
+        position: 'fixed',
+        bottom: 16,
+        left: 16,
+        zIndex: 1000,
+      }}>
+        <LanguageToggle collapsed={false} />
+      </div>
     </Layout>
   )
 }

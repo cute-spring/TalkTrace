@@ -1,0 +1,98 @@
+{
+  "app": {
+    "title": "测试样本管理平台",
+    "name": "Talk Trace"
+  },
+  "menu": {
+    "history": "历史记录查询",
+    "import": "数据导入",
+    "testCases": "测试用例管理",
+    "analytics": "统计分析"
+  },
+  "language": {
+    "toggle": "语言",
+    "english": "English",
+    "chinese": "中文"
+  },
+  "history": {
+    "title": "历史记录查询",
+    "searchPlaceholder": "输入关键词搜索",
+    "dateRange": "日期范围",
+    "model": "模型",
+    "selectModel": "选择模型",
+    "rating": "评分",
+    "search": "搜索",
+    "reset": "重置",
+    "export": "导出",
+    "columns": {
+      "sessionId": "会话ID",
+      "userQuery": "用户查询",
+      "aiResponse": "AI回复",
+      "rating": "评分",
+      "model": "模型",
+      "timestamp": "时间戳"
+    },
+    "retrievalChunks": "检索块",
+    "noData": "未找到数据"
+  },
+  "import": {
+    "title": "数据导入",
+    "description": "导入对话数据和测试用例",
+    "uploadFile": "上传文件",
+    "selectFile": "选择文件",
+    "supportedFormats": "支持格式：JSON、CSV",
+    "import": "导入",
+    "cancel": "取消",
+    "success": "导入成功",
+    "error": "导入失败",
+    "processing": "处理中..."
+  },
+  "testCases": {
+    "title": "测试用例管理",
+    "create": "创建测试用例",
+    "edit": "编辑",
+    "delete": "删除",
+    "export": "导出",
+    "import": "导入",
+    "name": "测试用例名称",
+    "description": "描述",
+    "status": "状态",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "actions": "操作",
+    "active": "活跃",
+    "inactive": "非活跃",
+    "confirmDelete": "确定要删除此测试用例吗？"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "信息",
+    "confirm": "确认",
+    "cancel": "取消",
+    "ok": "确定",
+    "yes": "是",
+    "no": "否",
+    "save": "保存",
+    "close": "关闭",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "search": "搜索",
+    "filter": "筛选",
+    "reset": "重置",
+    "submit": "提交",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "page": "页",
+    "total": "总计",
+    "items": "条",
+    "noData": "暂无数据",
+    "selectAll": "全选",
+    "clearSelection": "清空选择",
+    "view": "查看详情"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   Table,
@@ -32,12 +33,14 @@ interface HistoryRecord {
 }
 
 const HistoryPage: React.FC = () => {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
+  const [pagination, setPagination] = useState<any>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [filters, setFilters] = useState({
-    startTime: dayjs().subtract(7, 'days').toISOString(),
-    endTime: dayjs().toISOString(),
+    startTime: dayjs('2024-01-01').startOf('day').toISOString(), // Use a date that includes demo data
+    endTime: dayjs().endOf('day').toISOString(),
     modelIds: [] as string[],
     ratingRange: null as [number, number] | null,
     keywords: '',
@@ -82,11 +85,13 @@ const HistoryPage: React.FC = () => {
     try {
       const response = await historyService.search(filters)
 
-      // Fix: The actual data is nested in response.data.data (double nested)
-      const actualData = response.data.data
+      // The actual data is in response.data.data.items (API has extra data wrapper)
+      const actualData = response.data.data?.items || response.data.items || []
+      const paginationData = response.data.data || response.data
       setData(actualData)
+      setPagination(paginationData)
     } catch (error) {
-      message.error('获取历史记录失败')
+      message.error(t('common.error'))
       console.error('Failed to fetch history:', error)
     } finally {
       setLoading(false)
@@ -113,18 +118,19 @@ const HistoryPage: React.FC = () => {
   }
 
   const handleViewDetails = (record: HistoryRecord) => {
+    // 直接使用搜索结果中的完整数据，因为搜索API已经返回了完整的检索片段信息
     Modal.info({
-      title: '会话详情',
-      width: 800,
+      title: t('history.columns.sessionId'),
+      width: 1000,
       content: (
         <div style={{ marginTop: 16 }}>
           <div style={{ marginBottom: 16 }}>
             <Text strong>会话ID：</Text>
-            <Text>{record.session_id}</Text>
+            <Text code>{record.session_id}</Text>
           </div>
           <div style={{ marginBottom: 16 }}>
             <Text strong>模型：</Text>
-            <Tag>{record.model_id}</Tag>
+            <Tag color="blue">{record.model_id}</Tag>
           </div>
           <div style={{ marginBottom: 16 }}>
             <Text strong>用户问题：</Text>
@@ -138,13 +144,77 @@ const HistoryPage: React.FC = () => {
               {record.ai_response}
             </div>
           </div>
+
+          {/* 检索片段部分 */}
+          <div style={{ marginBottom: 16 }}>
+            <Text strong>检索片段：</Text>
+            <div style={{ marginTop: 8 }}>
+              {record.retrieval_chunks && record.retrieval_chunks.length > 0 ? (
+                <div>
+                  {record.retrieval_chunks.map((chunk: any, index: number) => (
+                    <Card
+                      key={chunk.id || index}
+                      size="small"
+                      style={{ marginBottom: 8 }}
+                      title={
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>{chunk.title || `片段 ${index + 1}`}</span>
+                          <Tag color="green">置信度: {chunk.metadata?.confidence ? (chunk.metadata.confidence * 100).toFixed(1) : 'N/A'}%</Tag>
+                        </div>
+                      }
+                    >
+                      <div style={{ marginBottom: 8 }}>
+                        <Text type="secondary">来源：</Text>
+                        <a href={chunk.source} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                          {chunk.source || '未知来源'}
+                        </a>
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <Text type="secondary">内容：</Text>
+                        <div style={{ background: '#fafafa', padding: 8, borderRadius: 4, marginTop: 4, maxHeight: 120, overflowY: 'auto' }}>
+                          {chunk.content}
+                        </div>
+                      </div>
+                      {chunk.metadata && (
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          <Space wrap>
+                            <span>发布: {chunk.metadata.publish_date || 'N/A'}</span>
+                            <span>生效: {chunk.metadata.effective_date || 'N/A'}</span>
+                            <span>过期: {chunk.metadata.expiration_date || 'N/A'}</span>
+                            <Tag color="orange">{chunk.metadata.chunk_type || '未分类'}</Tag>
+                            <span>排序: #{chunk.metadata.retrieval_rank || index + 1}</span>
+                          </Space>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">暂无检索片段信息</Text>
+              )}
+            </div>
+          </div>
+
           <div style={{ marginBottom: 16 }}>
             <Text strong>用户评分：</Text>
             <Rate disabled value={record.user_rating} style={{ marginLeft: 8 }} />
           </div>
           <div>
             <Text strong>创建时间：</Text>
-            <Text>{dayjs(record.created_at).format('YYYY-MM-DD HH:mm:ss')}</Text>
+            <Text>
+              {(() => {
+                try {
+                  // Handle various date formats
+                  if (!record.created_at) return 'N/A'
+                  // Normalize date format
+                  const normalizedDate = record.created_at.replace('+00:00Z', 'Z')
+                  const parsed = dayjs(normalizedDate)
+                  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : record.created_at
+                } catch (error) {
+                  return record.created_at || 'Invalid Date'
+                }
+              })()}
+            </Text>
           </div>
         </div>
       ),
@@ -153,7 +223,7 @@ const HistoryPage: React.FC = () => {
 
   const columns: ColumnsType<HistoryRecord> = [
     {
-      title: '会话ID',
+      title: t('history.columns.sessionId'),
       dataIndex: 'session_id',
       key: 'session_id',
       width: 200,
@@ -164,7 +234,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '用户问题',
+      title: t('history.columns.userQuery'),
       dataIndex: 'user_query',
       key: 'user_query',
       ellipsis: true,
@@ -175,7 +245,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: 'AI回答',
+      title: t('history.columns.aiResponse'),
       dataIndex: 'ai_response',
       key: 'ai_response',
       ellipsis: true,
@@ -186,14 +256,14 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '模型',
+      title: t('history.columns.model'),
       dataIndex: 'model_id',
       key: 'model_id',
       width: 150,
       render: (text) => <Tag>{text}</Tag>,
     },
     {
-      title: '评分',
+      title: t('history.columns.rating'),
       dataIndex: 'user_rating',
       key: 'user_rating',
       width: 120,
@@ -202,7 +272,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '时间',
+      title: t('history.columns.timestamp'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
@@ -222,7 +292,7 @@ const HistoryPage: React.FC = () => {
       },
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'actions',
       width: 100,
       render: (_, record) => (
@@ -231,7 +301,7 @@ const HistoryPage: React.FC = () => {
           size="small"
           onClick={() => handleViewDetails(record)}
         >
-          查看详情
+          {t('common.view')}
         </Button>
       ),
     },
@@ -247,16 +317,16 @@ const HistoryPage: React.FC = () => {
   return (
     <div>
       <Card className="page-header">
-        <Title level={3} className="page-title">历史记录查询</Title>
+        <Title level={3} className="page-title">{t('history.title')}</Title>
         <Text className="page-description">
-          从BigQuery中查询和筛选历史对话记录，选择需要导入的会话数据
+          Query and filter historical conversation records from BigQuery, select session data to import
         </Text>
       </Card>
 
       <Card className="search-form">
         <Space wrap size="middle">
           <div>
-            <Text strong>时间范围：</Text>
+            <Text strong>{t('history.dateRange')}：</Text>
             <RangePicker
               showTime
               defaultValue={[
@@ -269,10 +339,10 @@ const HistoryPage: React.FC = () => {
           </div>
 
           <div>
-            <Text strong>模型：</Text>
+            <Text strong>{t('history.model')}：</Text>
             <Select
               mode="multiple"
-              placeholder={modelsLoading ? "加载模型..." : "选择模型"}
+              placeholder={modelsLoading ? t('common.loading') : t('history.selectModel')}
               style={{ width: 200, marginLeft: 8 }}
               value={filters.modelIds}
               onChange={(values) => setFilters(prev => ({ ...prev, modelIds: values }))}
@@ -312,14 +382,14 @@ const HistoryPage: React.FC = () => {
             onClick={handleSearch}
             loading={loading}
           >
-            搜索
+            {t('history.search')}
           </Button>
 
           <Button
             icon={<ReloadOutlined />}
             onClick={fetchHistory}
           >
-            刷新
+            {t('history.reset')}
           </Button>
         </Space>
 
@@ -344,14 +414,14 @@ const HistoryPage: React.FC = () => {
       <Card className="content-card">
         <Table
           columns={columns}
-          dataSource={data?.items || []}
+          dataSource={data || []}
           rowKey="session_id"
           loading={loading}
           rowSelection={rowSelection}
           pagination={{
-            current: data?.page,
-            pageSize: data?.page_size || 20,
-            total: data?.total,
+            current: pagination?.page,
+            pageSize: pagination?.page_size || 20,
+            total: pagination?.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>

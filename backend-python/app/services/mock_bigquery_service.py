@@ -105,8 +105,37 @@ class MockBigQueryService(BigQueryService):
             contents = chunk_contents.get(topic, ["默认内容"])
 
             for i, content in enumerate(contents):
+                # 生成完整的元数据
+                publish_date = (base_time + timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
+                effective_date = (base_time + timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
+                expiration_date = (base_time + timedelta(days=365, hours=random.randint(0, 720))).strftime("%Y-%m-%d")
+
+                # 根据主题确定chunk类型
+                chunk_type_map = {
+                    "finance": "conceptual",
+                    "technology": "tutorial",
+                    "programming": "code",
+                    "architecture": "architectural",
+                    "security": "guideline",
+                    "development": "best_practice",
+                    "operations": "procedural"
+                }
+                chunk_type = chunk_type_map.get(topic, "text")
+
+                # 生成来源URL
+                source_urls = {
+                    "finance": "https://internal.com/finance/",
+                    "technology": "https://internal.com/tech/",
+                    "programming": "https://internal.com/dev/",
+                    "architecture": "https://internal.com/arch/",
+                    "security": "https://internal.com/security/",
+                    "development": "https://internal.com/dev/",
+                    "operations": "https://internal.com/ops/"
+                }
+                source_url = f"{source_urls.get(topic, 'https://internal.com/docs/')}{doc['id'].replace('_', '-')}"
+
                 chunk = RetrievalChunkRow(
-                    chunk_id=f"chunk_{doc['id']}_{i+1:03d}",
+                    chunk_id=f"CH-{(1000 + len(self._retrieval_chunks_data) + 1):04d}",
                     document_id=doc["id"],
                     chunk_index=i,
                     content=content,
@@ -117,7 +146,20 @@ class MockBigQueryService(BigQueryService):
                         "topic": topic,
                         "document_title": doc["title"],
                         "word_count": len(content),
-                        "language": "zh-CN"
+                        "language": "zh-CN",
+                        # 完整的检索片段元数据字段
+                        "publish_date": publish_date,
+                        "effective_date": effective_date,
+                        "expiration_date": expiration_date,
+                        "chunk_type": chunk_type,
+                        "source": source_url,
+                        "author": "expert@company.com",
+                        "reviewer": "reviewer@company.com",
+                        "confidence": random.uniform(0.75, 0.95),
+                        "retrieval_rank": i + 1,
+                        "tags": [topic, doc["id"].split("_")[0]],
+                        "category": topic,
+                        "subcategory": doc["id"].split("_")[1] if "_" in doc["id"] else "general"
                     },
                     created_at=base_time + timedelta(hours=random.randint(0, 720)),
                     updated_at=base_time + timedelta(hours=random.randint(0, 720))
