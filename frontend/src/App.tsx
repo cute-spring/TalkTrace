@@ -4,6 +4,7 @@ import AppLayout from './components/Layout/AppLayout'
 import HistoryPage from './pages/HistoryPage'
 import ImportPage from './pages/ImportPage'
 import TestCasePage from './pages/TestCasePage'
+import './i18n'
 
 const { Content } = Layout
 

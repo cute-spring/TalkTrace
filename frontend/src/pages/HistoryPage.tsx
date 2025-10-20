@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   Table,
@@ -32,6 +33,7 @@ interface HistoryRecord {
 }
 
 const HistoryPage: React.FC = () => {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
   const [pagination, setPagination] = useState<any>(null)
@@ -89,7 +91,7 @@ const HistoryPage: React.FC = () => {
       setData(actualData)
       setPagination(paginationData)
     } catch (error) {
-      message.error('获取历史记录失败')
+      message.error(t('common.error'))
       console.error('Failed to fetch history:', error)
     } finally {
       setLoading(false)
@@ -118,7 +120,7 @@ const HistoryPage: React.FC = () => {
   const handleViewDetails = (record: HistoryRecord) => {
     // 直接使用搜索结果中的完整数据，因为搜索API已经返回了完整的检索片段信息
     Modal.info({
-      title: '会话详情',
+      title: t('history.columns.sessionId'),
       width: 1000,
       content: (
         <div style={{ marginTop: 16 }}>
@@ -221,7 +223,7 @@ const HistoryPage: React.FC = () => {
 
   const columns: ColumnsType<HistoryRecord> = [
     {
-      title: '会话ID',
+      title: t('history.columns.sessionId'),
       dataIndex: 'session_id',
       key: 'session_id',
       width: 200,
@@ -232,7 +234,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '用户问题',
+      title: t('history.columns.userQuery'),
       dataIndex: 'user_query',
       key: 'user_query',
       ellipsis: true,
@@ -243,7 +245,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: 'AI回答',
+      title: t('history.columns.aiResponse'),
       dataIndex: 'ai_response',
       key: 'ai_response',
       ellipsis: true,
@@ -254,14 +256,14 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '模型',
+      title: t('history.columns.model'),
       dataIndex: 'model_id',
       key: 'model_id',
       width: 150,
       render: (text) => <Tag>{text}</Tag>,
     },
     {
-      title: '评分',
+      title: t('history.columns.rating'),
       dataIndex: 'user_rating',
       key: 'user_rating',
       width: 120,
@@ -270,7 +272,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '时间',
+      title: t('history.columns.timestamp'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
@@ -290,7 +292,7 @@ const HistoryPage: React.FC = () => {
       },
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'actions',
       width: 100,
       render: (_, record) => (
@@ -299,7 +301,7 @@ const HistoryPage: React.FC = () => {
           size="small"
           onClick={() => handleViewDetails(record)}
         >
-          查看详情
+          {t('common.view')}
         </Button>
       ),
     },
@@ -315,16 +317,16 @@ const HistoryPage: React.FC = () => {
   return (
     <div>
       <Card className="page-header">
-        <Title level={3} className="page-title">历史记录查询</Title>
+        <Title level={3} className="page-title">{t('history.title')}</Title>
         <Text className="page-description">
-          从BigQuery中查询和筛选历史对话记录，选择需要导入的会话数据
+          Query and filter historical conversation records from BigQuery, select session data to import
         </Text>
       </Card>
 
       <Card className="search-form">
         <Space wrap size="middle">
           <div>
-            <Text strong>时间范围：</Text>
+            <Text strong>{t('history.dateRange')}：</Text>
             <RangePicker
               showTime
               defaultValue={[
@@ -337,10 +339,10 @@ const HistoryPage: React.FC = () => {
           </div>
 
           <div>
-            <Text strong>模型：</Text>
+            <Text strong>{t('history.model')}：</Text>
             <Select
               mode="multiple"
-              placeholder={modelsLoading ? "加载模型..." : "选择模型"}
+              placeholder={modelsLoading ? t('common.loading') : t('history.selectModel')}
               style={{ width: 200, marginLeft: 8 }}
               value={filters.modelIds}
               onChange={(values) => setFilters(prev => ({ ...prev, modelIds: values }))}
@@ -380,14 +382,14 @@ const HistoryPage: React.FC = () => {
             onClick={handleSearch}
             loading={loading}
           >
-            搜索
+            {t('history.search')}
           </Button>
 
           <Button
             icon={<ReloadOutlined />}
             onClick={fetchHistory}
           >
-            刷新
+            {t('history.reset')}
           </Button>
         </Space>
 
