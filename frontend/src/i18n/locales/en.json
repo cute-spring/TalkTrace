@@ -33,7 +33,27 @@
       "timestamp": "Timestamp"
     },
     "retrievalChunks": "Retrieval Chunks",
-    "noData": "No data found"
+    "noData": "No data found",
+    "modal": {
+      "sessionId": "Session ID:",
+      "model": "Model:",
+      "userQuery": "User Query:",
+      "aiResponse": "AI Response:",
+      "retrievalChunks": "Retrieval Chunks:",
+      "chunk": "Chunk",
+      "confidence": "Confidence:",
+      "source": "Source:",
+      "unknownSource": "Unknown Source",
+      "content": "Content:",
+      "published": "Published:",
+      "effective": "Effective:",
+      "expired": "Expired:",
+      "unclassified": "Unclassified",
+      "rank": "Rank:",
+      "userRating": "User Rating:",
+      "createdAt": "Created At:",
+      "noChunks": "No retrieval chunks available"
+    }
   },
   "import": {
     "title": "Data Import",

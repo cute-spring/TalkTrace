@@ -33,7 +33,27 @@
       "timestamp": "时间戳"
     },
     "retrievalChunks": "检索块",
-    "noData": "未找到数据"
+    "noData": "未找到数据",
+    "modal": {
+      "sessionId": "会话ID：",
+      "model": "模型：",
+      "userQuery": "用户问题：",
+      "aiResponse": "AI回答：",
+      "retrievalChunks": "检索片段：",
+      "chunk": "片段",
+      "confidence": "置信度：",
+      "source": "来源：",
+      "unknownSource": "未知来源",
+      "content": "内容：",
+      "published": "发布：",
+      "effective": "生效：",
+      "expired": "过期：",
+      "unclassified": "未分类",
+      "rank": "排序：",
+      "userRating": "用户评分：",
+      "createdAt": "创建时间：",
+      "noChunks": "暂无检索片段信息"
+    }
   },
   "import": {
     "title": "数据导入",

@@ -118,36 +118,36 @@ const HistoryPage: React.FC = () => {
   }
 
   const handleViewDetails = (record: HistoryRecord) => {
-    // 直接使用搜索结果中的完整数据，因为搜索API已经返回了完整的检索片段信息
+    // Use search results with complete retrieval chunk information
     Modal.info({
-      title: t('history.columns.sessionId'),
+      title: t('history.modal.sessionId'),
       width: 1000,
       content: (
         <div style={{ marginTop: 16 }}>
           <div style={{ marginBottom: 16 }}>
-            <Text strong>会话ID：</Text>
+            <Text strong>{t('history.modal.sessionId')}</Text>
             <Text code>{record.session_id}</Text>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <Text strong>模型：</Text>
+            <Text strong>{t('history.modal.model')}</Text>
             <Tag color="blue">{record.model_id}</Tag>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <Text strong>用户问题：</Text>
+            <Text strong>{t('history.modal.userQuery')}</Text>
             <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, marginTop: 8 }}>
               {record.user_query}
             </div>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <Text strong>AI回答：</Text>
+            <Text strong>{t('history.modal.aiResponse')}</Text>
             <div style={{ background: '#f0f7ff', padding: 12, borderRadius: 4, marginTop: 8 }}>
               {record.ai_response}
             </div>
           </div>
 
-          {/* 检索片段部分 */}
+          {/* Retrieval chunks section */}
           <div style={{ marginBottom: 16 }}>
-            <Text strong>检索片段：</Text>
+            <Text strong>{t('history.modal.retrievalChunks')}</Text>
             <div style={{ marginTop: 8 }}>
               {record.retrieval_chunks && record.retrieval_chunks.length > 0 ? (
                 <div>
@@ -158,19 +158,19 @@ const HistoryPage: React.FC = () => {
                       style={{ marginBottom: 8 }}
                       title={
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>{chunk.title || `片段 ${index + 1}`}</span>
-                          <Tag color="green">置信度: {chunk.metadata?.confidence ? (chunk.metadata.confidence * 100).toFixed(1) : 'N/A'}%</Tag>
+                          <span>{chunk.title || `${t('history.modal.chunk')} ${index + 1}`}</span>
+                          <Tag color="green">{t('history.modal.confidence')} {chunk.metadata?.confidence ? (chunk.metadata.confidence * 100).toFixed(1) : 'N/A'}%</Tag>
                         </div>
                       }
                     >
                       <div style={{ marginBottom: 8 }}>
-                        <Text type="secondary">来源：</Text>
+                        <Text type="secondary">{t('history.modal.source')}</Text>
                         <a href={chunk.source} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
-                          {chunk.source || '未知来源'}
+                          {chunk.source || t('history.modal.unknownSource')}
                         </a>
                       </div>
                       <div style={{ marginBottom: 8 }}>
-                        <Text type="secondary">内容：</Text>
+                        <Text type="secondary">{t('history.modal.content')}</Text>
                         <div style={{ background: '#fafafa', padding: 8, borderRadius: 4, marginTop: 4, maxHeight: 120, overflowY: 'auto' }}>
                           {chunk.content}
                         </div>
@@ -178,11 +178,11 @@ const HistoryPage: React.FC = () => {
                       {chunk.metadata && (
                         <div style={{ fontSize: '12px', color: '#666' }}>
                           <Space wrap>
-                            <span>发布: {chunk.metadata.publish_date || 'N/A'}</span>
-                            <span>生效: {chunk.metadata.effective_date || 'N/A'}</span>
-                            <span>过期: {chunk.metadata.expiration_date || 'N/A'}</span>
-                            <Tag color="orange">{chunk.metadata.chunk_type || '未分类'}</Tag>
-                            <span>排序: #{chunk.metadata.retrieval_rank || index + 1}</span>
+                            <span>{t('history.modal.published')} {chunk.metadata.publish_date || 'N/A'}</span>
+                            <span>{t('history.modal.effective')} {chunk.metadata.effective_date || 'N/A'}</span>
+                            <span>{t('history.modal.expired')} {chunk.metadata.expiration_date || 'N/A'}</span>
+                            <Tag color="orange">{chunk.metadata.chunk_type || t('history.modal.unclassified')}</Tag>
+                            <span>{t('history.modal.rank')} #{chunk.metadata.retrieval_rank || index + 1}</span>
                           </Space>
                         </div>
                       )}
@@ -190,17 +190,17 @@ const HistoryPage: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <Text type="secondary">暂无检索片段信息</Text>
+                <Text type="secondary">{t('history.modal.noChunks')}</Text>
               )}
             </div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <Text strong>用户评分：</Text>
+            <Text strong>{t('history.modal.userRating')}</Text>
             <Rate disabled value={record.user_rating} style={{ marginLeft: 8 }} />
           </div>
           <div>
-            <Text strong>创建时间：</Text>
+            <Text strong>{t('history.modal.createdAt')}</Text>
             <Text>
               {(() => {
                 try {
