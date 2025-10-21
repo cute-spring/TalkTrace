@@ -21,9 +21,13 @@
     "model": "Model",
     "selectModel": "Select Model",
     "rating": "Rating",
+    "selectRatingRange": "Select Rating Range",
     "search": "Search",
     "reset": "Reset",
     "export": "Export",
+    "rating1-2": "1-2 Stars",
+    "rating3-4": "3-4 Stars",
+    "rating5": "5 Stars",
     "columns": {
       "sessionId": "Session ID",
       "userQuery": "User Query",
@@ -33,7 +37,30 @@
       "timestamp": "Timestamp"
     },
     "retrievalChunks": "Retrieval Chunks",
-    "noData": "No data found"
+    "noData": "No data found",
+    "modal": {
+      "sessionId": "Session ID:",
+      "model": "Model:",
+      "userQuery": "User Query:",
+      "aiResponse": "AI Response:",
+      "retrievalChunks": "Retrieval Chunks:",
+      "chunk": "Chunk",
+      "confidence": "Confidence:",
+      "source": "Source:",
+      "unknownSource": "Unknown Source",
+      "content": "Content:",
+      "published": "Published:",
+      "effective": "Effective:",
+      "expired": "Expired:",
+      "unclassified": "Unclassified",
+      "rank": "Rank:",
+      "userRating": "User Rating:",
+      "createdAt": "Created At:",
+      "noChunks": "No retrieval chunks available"
+    },
+    "selectedRecords": "Selected {{count}} records",
+    "pagination": "Items {{start}}-{{end}} of {{total}}",
+    "importSelected": "Import Selected Records"
   },
   "import": {
     "title": "Data Import",
@@ -45,7 +72,123 @@
     "cancel": "Cancel",
     "success": "Import successful",
     "error": "Import failed",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "steps": {
+      "selectData": "Select Data",
+      "selectDataDesc": "Select conversations to import from history records",
+      "configImport": "Configure Import",
+      "configImportDesc": "Set import parameters and owner",
+      "executeImport": "Execute Import",
+      "executeImportDesc": "Process data and create test cases"
+    },
+    "config": {
+      "title": "Import Configuration",
+      "ownerEmail": "Owner Email:",
+      "ownerPlaceholder": "Enter owner email",
+      "defaultPriority": "Default Priority:",
+      "defaultDifficulty": "Default Difficulty:",
+      "advancedOptions": "Advanced Options:",
+      "autoGenerateAnalysis": "Auto-generate analysis data"
+    },
+    "preview": {
+      "title": "Preview Data",
+      "selected": "Selected {{count}} conversation records, showing first {{max}} preview",
+      "columns": {
+        "sessionId": "Session ID",
+        "messageCount": "Message Count",
+        "firstQuestion": "First Question",
+        "lastAnswer": "Last Answer",
+        "userRating": "User Rating"
+      },
+      "hasRating": "Rated",
+      "notRated": "Not Rated"
+    },
+    "duplicateDetection": {
+      "title": "Duplicate Session Detection",
+      "found": "Found Duplicate Sessions",
+      "summary": "Found {duplicates} duplicate sessions and {new} new sessions out of {total} total sessions",
+      "description": "Detected {count} sessions already imported, these sessions will be skipped.",
+      "toggleDetails": "Show/Hide duplicate details",
+      "columns": {
+        "sessionId": "Session ID",
+        "existingTestCase": "Existing Test Case",
+        "owner": "Owner",
+        "importDate": "Original Import Date"
+      }
+    },
+    "importOptions": {
+      "title": "Import Options",
+      "skipDuplicates": "Skip duplicate sessions, only import new sessions ({count} new sessions)",
+      "importAllDuplicates": "Import all sessions, including duplicates ({count} total)",
+      "skipWarning": "If unchecked, duplicate sessions will be imported as new test cases, but this is not recommended.",
+      "skipDescription": "Recommended: Only import sessions that don't exist in your test case database.",
+      "importAllDescription": "Not recommended: This will create duplicate test cases for existing sessions."
+    },
+    "progress": {
+      "title": "Import Progress",
+      "taskId": "Task ID:",
+      "status": "Status:",
+      "total": "Total:",
+      "processed": "Processed:",
+      "failed": "Failed:",
+      "skipped": "Skipped:",
+      "completed": "Import completed",
+      "viewTestCases": "View Test Cases",
+      "importMore": "Import More Data"
+    },
+    "history": {
+      "title": "Import History"
+    },
+    "startButton": "Start Import ({count} sessions)",
+    "importOnlyNewButton": "Import Only New Sessions ({count})",
+    "importAllButton": "Import All Sessions ({count})",
+    "returnButton": "Return to Selection",
+    "alert": "Please select conversation data to import from the history page first",
+    "goToHistory": "Go to History Page",
+    "status": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "statusTags": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "ownerRequired": "Please enter owner email",
+    "previewLoadSuccess": "Preview data loaded successfully",
+    "previewLoadFailed": "Failed to load preview data",
+    "duplicateWarning": "Found {duplicateCount} duplicate sessions, {validCount} new sessions can be imported",
+    "importStarted": "Import task started",
+    "importStartFailed": "Failed to start import",
+    "importCompleted": "Import completed",
+    "importFailed": "Import failed",
+    "tableColumns": {
+      "taskId": "Task ID",
+      "status": "Status",
+      "total": "Total",
+      "processed": "Processed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "startTime": "Start Time"
+    },
+    "tableLabels": {
+      "sessionId": "Session ID",
+      "messageCount": "Message Count",
+      "firstMessage": "First Message",
+      "lastMessage": "Last Message",
+      "userRating": "User Rating",
+      "existingTestCase": "Existing Test Case",
+      "importDate": "Original Import Date"
+    },
+    "tableTags": {
+      "rated": "Rated",
+      "notRated": "Not Rated",
+      "messageUnit": "messages"
+    },
+    "pageDescription": "Import selected historical conversation data as standardized test cases"
   },
   "testCases": {
     "title": "Test Case Management",
@@ -62,7 +205,49 @@
     "actions": "Actions",
     "active": "Active",
     "inactive": "Inactive",
-    "confirmDelete": "Are you sure you want to delete this test case?"
+    "confirmDelete": "Are you sure you want to delete this test case?",
+    "columns": {
+      "name": "Name",
+      "status": "Status",
+      "priority": "Priority",
+      "domain": "Domain",
+      "difficulty": "Difficulty",
+      "owner": "Owner",
+      "tags": "Tags",
+      "createdTime": "Created Time",
+      "actions": "Actions"
+    },
+    "searchPlaceholder": "Search test cases",
+    "editModal": {
+      "title": "Edit Test Case",
+      "nameRequired": "Please enter test case name"
+    },
+    "detailDrawer": {
+      "title": "Test Case Details"
+    },
+    "batchDelete": {
+      "title": "Batch Delete",
+      "confirm": "Are you sure you want to delete the selected {count} test cases?"
+    },
+    "selectedItems": "Selected {count} items",
+    "pageDescription": "Manage and edit test cases imported from historical records",
+    "confirmDeleteTitle": "Confirm Delete",
+    "confirmDeleteContent": "Are you sure you want to delete the test case \"{name}\"?",
+    "deleteSuccess": "Delete successful",
+    "deleteFailed": "Delete failed",
+    "batchDeleteSuccess": "Batch delete successful",
+    "batchDeleteFailed": "Batch delete failed",
+    "updateSuccess": "Update successful",
+    "updateFailed": "Update failed",
+    "fetchFailed": "Failed to fetch test case list",
+    "details": "Details",
+    "editModal": {
+      "title": "Edit Test Case",
+      "nameRequired": "Please enter test case name"
+    },
+    "detailDrawer": {
+      "title": "Test Case Details"
+    }
   },
   "common": {
     "loading": "Loading...",
@@ -93,6 +278,279 @@
     "noData": "No data available",
     "selectAll": "Select All",
     "clearSelection": "Clear Selection",
-    "view": "View Details"
+    "view": "View Details",
+    "all": "All",
+    "actions": "Actions",
+    "details": "Details",
+    "editDetails": "Edit Details"
+  },
+  "status": {
+    "draft": "Draft",
+    "pending_review": "Pending Review",
+    "approved": "Approved",
+    "published": "Published",
+    "rejected": "Rejected"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "domain": {
+    "finance": "Finance",
+    "technology": "Technology",
+    "healthcare": "Healthcare",
+    "general": "General"
+  },
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email address",
+    "nameRequired": "Please enter a name",
+    "testCaseNameRequired": "Please enter test case name"
+  },
+  "testCaseDetail": {
+    "modal": {
+      "title": "Test Case Details",
+      "close": "Close"
+    },
+    "performanceMetrics": {
+      "title": "Performance Metrics",
+      "totalResponseTime": "Total Response Time",
+      "retrievalTime": "Retrieval Time",
+      "generationTime": "Generation Time",
+      "tokenUsage": "Token Usage",
+      "retrievedChunks": "Retrieved Chunks"
+    },
+    "userFeedback": {
+      "title": "User Feedback",
+      "rating": "Rating:",
+      "category": "Category:",
+      "comment": "Comment:",
+      "concern": "Issue:",
+      "improvement": "Improvement Suggestion:"
+    },
+    "currentQuery": {
+      "title": "Current Query"
+    },
+    "conversationHistory": {
+      "title": "Conversation History",
+      "columns": {
+        "turn": "Turn",
+        "role": "Role",
+        "content": "Content",
+        "time": "Time"
+      },
+      "user": "User",
+      "assistant": "AI",
+      "system": "System",
+      "userLabel": "User:",
+      "aiLabel": "AI:"
+    },
+    "retrievedChunks": {
+      "title": "Retrieved Chunks",
+      "columns": {
+        "rank": "Rank",
+        "title": "Title",
+        "similarity": "Similarity",
+        "contentPreview": "Content Preview"
+      }
+    },
+    "modelConfig": {
+      "title": "Model Configuration",
+      "modelName": "Model Name:",
+      "version": "Version:",
+      "parameters": "Parameters:"
+    },
+    "promptConfig": {
+      "title": "Prompt Configuration",
+      "systemPrompt": "System Prompt:",
+      "userInstruction": "User Instruction:"
+    },
+    "retrievalConfig": {
+      "title": "Retrieval Configuration",
+      "topK": "Top-K:",
+      "similarityThreshold": "Similarity Threshold:",
+      "reranker": "Reranker:",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "aiResponse": {
+      "title": "AI Response"
+    },
+    "retrievalQuality": {
+      "title": "Retrieval Quality",
+      "maxSimilarity": "Max Similarity",
+      "avgSimilarity": "Avg Similarity",
+      "diversityScore": "Diversity Score"
+    },
+    "analysis": {
+      "editAnalysis": "Edit Analysis",
+      "saveAnalysis": "Save Analysis",
+      "cancel": "Cancel",
+      "problemAnalysis": "Problem Analysis",
+      "qualityScore": "Quality Score",
+      "expectedAnswer": "Expected Answer",
+      "acceptanceCriteria": "Acceptance Criteria",
+      "optimizationSuggestions": "Optimization Suggestions",
+      "analysisNotes": "Analysis Notes",
+      "contextUnderstanding": "Context Understanding",
+      "answerAccuracy": "Answer Accuracy",
+      "answerCompleteness": "Answer Completeness",
+      "clarity": "Clarity",
+      "citationQuality": "Citation Quality",
+      "analysisInfo": "Analysis Information",
+      "issueType": "Issue Type:",
+      "rootCause": "Root Cause:",
+      "analyst": "Analyst:",
+      "analysisTime": "Analysis Time:",
+      "noAnalysisData": "No analysis data available",
+      "startAnalysisHint": "Click the 'Edit Analysis' button above to start analysis.",
+      "issueTypes": {
+        "good_example": "Good Example",
+        "context_understanding": "Context Understanding",
+        "answer_quality": "Answer Quality",
+        "retrieval_quality": "Retrieval Quality",
+        "response_format": "Response Format",
+        "other": "Other Issues"
+      },
+      "placeholders": {
+        "rootCause": "Analyze the root cause of the problem...",
+        "expectedAnswer": "Describe how the AI should ideally answer this question...",
+        "acceptanceCriteria": "Describe the criteria for this test case to pass...",
+        "optimizationSuggestions": "Enter one optimization suggestion per line...",
+        "analysisNotes": "Record important findings and thoughts during analysis..."
+      }
+    },
+    "tabs": {
+      "overview": "Overview",
+      "context": "Conversation Context",
+      "config": "Configuration",
+      "execution": "Execution Result",
+      "analysis": "Analysis"
+    },
+    "performanceMetrics": {
+      "title": "Performance Metrics",
+      "totalResponseTime": "Total Response Time",
+      "retrievalTime": "Retrieval Time",
+      "generationTime": "Generation Time",
+      "tokenUsage": "Token Usage",
+      "retrievedChunks": "Retrieved Chunks"
+    },
+    "userFeedback": {
+      "title": "User Feedback",
+      "rating": "Rating:",
+      "category": "Category:",
+      "comment": "Comment:",
+      "concern": "Issue:",
+      "improvement": "Improvement Suggestion:"
+    },
+    "currentQuery": {
+      "title": "Current Query"
+    },
+    "conversationHistory": {
+      "title": "Conversation History",
+      "columns": {
+        "turn": "Turn",
+        "role": "Role",
+        "content": "Content",
+        "time": "Time"
+      },
+      "user": "User",
+      "assistant": "AI",
+      "system": "System",
+      "userLabel": "User:",
+      "aiLabel": "AI:"
+    },
+    "retrievedChunks": {
+      "title": "Retrieved Chunks",
+      "columns": {
+        "rank": "Rank",
+        "title": "Title",
+        "similarity": "Similarity",
+        "contentPreview": "Content Preview"
+      }
+    },
+    "modelConfig": {
+      "title": "Model Configuration",
+      "modelName": "Model Name:",
+      "version": "Version:",
+      "parameters": "Parameters:"
+    },
+    "promptConfig": {
+      "title": "Prompt Configuration",
+      "systemPrompt": "System Prompt:",
+      "userInstruction": "User Instruction:"
+    },
+    "retrievalConfig": {
+      "title": "Retrieval Configuration",
+      "topK": "Top-K:",
+      "similarityThreshold": "Similarity Threshold:",
+      "reranker": "Reranker:",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "aiResponse": {
+      "title": "AI Response"
+    },
+    "retrievalQuality": {
+      "title": "Retrieval Quality",
+      "maxSimilarity": "Max Similarity",
+      "avgSimilarity": "Avg Similarity",
+      "diversityScore": "Diversity Score"
+    },
+    "analysis": {
+      "editAnalysis": "Edit Analysis",
+      "saveAnalysis": "Save Analysis",
+      "cancel": "Cancel",
+      "problemAnalysis": "Problem Analysis",
+      "qualityScore": "Quality Score",
+      "expectedAnswer": "Expected Answer",
+      "acceptanceCriteria": "Acceptance Criteria",
+      "optimizationSuggestions": "Optimization Suggestions",
+      "analysisNotes": "Analysis Notes",
+      "contextUnderstanding": "Context Understanding",
+      "answerAccuracy": "Answer Accuracy",
+      "answerCompleteness": "Answer Completeness",
+      "clarity": "Clarity",
+      "citationQuality": "Citation Quality",
+      "analysisInfo": "Analysis Information",
+      "issueType": "Issue Type:",
+      "rootCause": "Root Cause:",
+      "analyst": "Analyst:",
+      "analysisTime": "Analysis Time:",
+      "noAnalysisData": "No analysis data available",
+      "startAnalysisHint": "Click the 'Edit Analysis' button above to start analysis.",
+      "issueTypes": {
+        "good_example": "Good Example",
+        "context_understanding": "Context Understanding",
+        "answer_quality": "Answer Quality",
+        "retrieval_quality": "Retrieval Quality",
+        "response_format": "Response Format",
+        "other": "Other Issues"
+      },
+      "placeholders": {
+        "rootCause": "Analyze the root cause of the problem...",
+        "expectedAnswer": "Describe how the AI should ideally answer this question...",
+        "acceptanceCriteria": "Describe the criteria for this test case to pass...",
+        "optimizationSuggestions": "Enter one optimization suggestion per line...",
+        "analysisNotes": "Record important findings and thoughts during analysis..."
+      }
+    }
+  },
+  "roles": {
+    "user": "User",
+    "assistant": "AI",
+    "system": "System"
+  },
+  "languageToggle": {
+    "englishDisplay": "English",
+    "chineseDisplay": "中文",
+    "shortEn": "EN",
+    "shortZh": "中"
   }
 }

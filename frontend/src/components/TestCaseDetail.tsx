@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   Descriptions,
@@ -153,6 +154,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
   visible,
   onClose,
 }) => {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [testCase, setTestCase] = useState<TestCaseDetail | null>(null)
   const [editing, setEditing] = useState(false)
@@ -220,10 +222,10 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       await testCaseService.update(testCaseId, { analysis: analysisData })
       setAnalysisEditing(false)
       loadTestCaseDetail()
-      message.success('分析数据保存成功')
+      message.success(t('common.success'))
     } catch (error) {
       console.error('Failed to update analysis:', error)
-      message.error('保存分析失败')
+      message.error(t('common.error'))
     }
   }
 
@@ -271,7 +273,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       width: 80,
       render: (role) => (
         <Tag color={role === 'user' ? 'blue' : role === 'assistant' ? 'green' : 'default'}>
-          {role === 'user' ? '用户' : role === 'assistant' ? 'AI' : '系统'}
+          {role === 'user' ? t('roles.user') : role === 'assistant' ? t('roles.assistant') : t('roles.system')}
         </Tag>
       ),
     },
@@ -282,13 +284,13 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
         <div>
           {record.query && (
             <div style={{ marginBottom: 8 }}>
-              <Text strong>用户：</Text>
+              <Text strong>{t('testCaseDetail.conversationHistory.userLabel')}</Text>
               <Text>{record.query}</Text>
             </div>
           )}
           {record.response && (
             <div>
-              <Text strong>AI：</Text>
+              <Text strong>{t('testCaseDetail.conversationHistory.aiLabel')}</Text>
               <Text>{record.response}</Text>
             </div>
           )}
@@ -345,18 +347,18 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
 
   return (
     <Modal
-      title="测试用例详情"
+      title={t('testCaseDetail.modal.title')}
       open={visible}
       onCancel={onClose}
       width={1200}
       footer={[
         <Button key="close" onClick={onClose}>
-          关闭
+          {t('testCaseDetail.modal.close')}
         </Button>,
       ]}
     >
       <Tabs defaultActiveKey="overview">
-        <TabPane tab="概览" key="overview">
+        <TabPane tab={t('testCaseDetail.tabs.overview')} key="overview">
           <Row gutter={[16, 16]}>
             <Col span={16}>
               <Card>
@@ -411,7 +413,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
             </Col>
 
             <Col span={8}>
-              <Card title="性能指标" size="small">
+              <Card title={t('testCaseDetail.performanceMetrics.title')} size="small">
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
                     <Text>总响应时间</Text>
@@ -449,7 +451,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
               </Card>
 
               {testCase.execution.user_feedback && (
-                <Card title="用户反馈" size="small" style={{ marginTop: 16 }}>
+                <Card title={t('testCaseDetail.userFeedback.title')} size="small" style={{ marginTop: 16 }}>
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div>
                       <Text strong>评分：</Text>
@@ -482,10 +484,10 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
           </Row>
         </TabPane>
 
-        <TabPane tab="对话上下文" key="context">
+        <TabPane tab={t('testCaseDetail.tabs.context')} key="context">
           <Row gutter={[16, 16]}>
             <Col span={12}>
-              <Card title="当前查询" size="small">
+              <Card title={t('testCaseDetail.currentQuery.title')} size="small">
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Paragraph>{testCase.input.current_query.text}</Paragraph>
                   <Text type="secondary">
@@ -494,7 +496,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Space>
               </Card>
 
-              <Card title="对话历史" size="small" style={{ marginTop: 16 }}>
+              <Card title={t('testCaseDetail.conversationHistory.title')} size="small" style={{ marginTop: 16 }}>
                 <Table
                   columns={conversationColumns}
                   dataSource={testCase.input.conversation_history}
@@ -505,7 +507,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
             </Col>
 
             <Col span={12}>
-              <Card title="检索片段" size="small">
+              <Card title={t('testCaseDetail.retrievedChunks.title')} size="small">
                 <Table
                   columns={retrievedChunksColumns}
                   dataSource={testCase.input.current_retrieved_chunks}
@@ -517,10 +519,10 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
           </Row>
         </TabPane>
 
-        <TabPane tab="配置" key="config">
+        <TabPane tab={t('testCaseDetail.tabs.config')} key="config">
           <Row gutter={[16, 16]}>
             <Col span={12}>
-              <Card title="模型配置" size="small">
+              <Card title={t('testCaseDetail.modelConfig.title')} size="small">
                 <Descriptions bordered size="small" column={1}>
                   <Descriptions.Item label="模型名称">
                     {testCase.test_config.model.name}
@@ -536,7 +538,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
             </Col>
 
             <Col span={12}>
-              <Card title="提示词配置" size="small">
+              <Card title={t('testCaseDetail.promptConfig.title')} size="small">
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
                     <Text strong>系统提示词：</Text>
@@ -554,7 +556,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
               </Card>
 
               {testCase.test_config.retrieval && (
-                <Card title="检索配置" size="small" style={{ marginTop: 16 }}>
+                <Card title={t('testCaseDetail.retrievalConfig.title')} size="small" style={{ marginTop: 16 }}>
                   <Descriptions bordered size="small" column={1}>
                     <Descriptions.Item label="Top-K">
                       {testCase.test_config.retrieval.top_k || '-'}
@@ -572,17 +574,17 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
           </Row>
         </TabPane>
 
-        <TabPane tab="执行结果" key="execution">
-          <Card title="AI回答" size="small">
+        <TabPane tab={t('testCaseDetail.tabs.execution')} key="execution">
+          <Card title={t('testCaseDetail.aiResponse.title')} size="small">
             <Paragraph copyable>{testCase.execution.actual.response}</Paragraph>
           </Card>
 
           {testCase.execution.actual.retrieval_quality && (
-            <Card title="检索质量" size="small" style={{ marginTop: 16 }}>
+            <Card title={t('testCaseDetail.retrievalQuality.title')} size="small" style={{ marginTop: 16 }}>
               <Row gutter={16}>
                 <Col span={8}>
                   <Statistic
-                    title="最大相似度"
+                    title={t('testCaseDetail.retrievalQuality.maxSimilarity')}
                     value={testCase.execution.actual.retrieval_quality.max_similarity}
                     precision={3}
                     suffix="/ 1.0"
@@ -590,7 +592,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Col>
                 <Col span={8}>
                   <Statistic
-                    title="平均相似度"
+                    title={t('testCaseDetail.retrievalQuality.avgSimilarity')}
                     value={testCase.execution.actual.retrieval_quality.avg_similarity}
                     precision={3}
                     suffix="/ 1.0"
@@ -598,7 +600,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Col>
                 <Col span={8}>
                   <Statistic
-                    title="多样性分数"
+                    title={t('testCaseDetail.retrievalQuality.diversityScore')}
                     value={testCase.execution.actual.retrieval_quality.diversity_score}
                     precision={3}
                     suffix="/ 1.0"
@@ -609,7 +611,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
           )}
         </TabPane>
 
-        <TabPane tab="分析" key="analysis">
+        <TabPane tab={t('testCaseDetail.tabs.analysis')} key="analysis">
           <div style={{ marginBottom: 16 }}>
             <Space>
               {!analysisEditing ? (
@@ -680,7 +682,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
             >
               <Row gutter={[16, 16]}>
                 <Col span={12}>
-                  <Card title="问题分析" size="small">
+                  <Card title={t('testCaseDetail.analysis.problemAnalysis')} size="small">
                     <Form.Item
                       label="问题类型"
                       name="issue_type"
@@ -707,7 +709,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Col>
 
                 <Col span={12}>
-                  <Card title="质量评分" size="small">
+                  <Card title={t('testCaseDetail.analysis.qualityScore')} size="small">
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <Form.Item
                         label={
@@ -788,7 +790,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Col>
               </Row>
 
-              <Card title="期望答案" size="small" style={{ marginTop: 16 }}>
+              <Card title={t('testCaseDetail.analysis.expectedAnswer')} size="small" style={{ marginTop: 16 }}>
                 <Form.Item
                   name="expected_answer"
                   rules={[{ required: true, message: '请描述期望答案' }]}
@@ -797,7 +799,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Form.Item>
               </Card>
 
-              <Card title="验收标准" size="small" style={{ marginTop: 16 }}>
+              <Card title={t('testCaseDetail.analysis.acceptanceCriteria')} size="small" style={{ marginTop: 16 }}>
                 <Form.Item
                   name="acceptance_criteria"
                   rules={[{ required: true, message: '请描述验收标准' }]}
@@ -806,7 +808,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Form.Item>
               </Card>
 
-              <Card title="优化建议" size="small" style={{ marginTop: 16 }}>
+              <Card title={t('testCaseDetail.analysis.optimizationSuggestions')} size="small" style={{ marginTop: 16 }}>
                 <Form.Item name="optimization_suggestions">
                   <TextArea
                     rows={4}
@@ -815,7 +817,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 </Form.Item>
               </Card>
 
-              <Card title="分析笔记" size="small" style={{ marginTop: 16 }}>
+              <Card title={t('testCaseDetail.analysis.analysisNotes')} size="small" style={{ marginTop: 16 }}>
                 <Form.Item name="notes">
                   <TextArea rows={3} placeholder="记录分析过程中的重要发现和思考..." />
                 </Form.Item>
@@ -827,7 +829,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                 <>
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
-                      <Card title="质量评分" size="small">
+                      <Card title={t('testCaseDetail.analysis.qualityScore')} size="small">
                         <Space direction="vertical" style={{ width: '100%' }}>
                           {Object.entries(testCase.analysis.quality_scores).map(([key, score]) => (
                             <div key={key}>
@@ -850,7 +852,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                     </Col>
 
                     <Col span={12}>
-                      <Card title="分析信息" size="small">
+                      <Card title={t('testCaseDetail.analysis.analysisInfo')} size="small">
                         <Descriptions bordered size="small" column={1}>
                           <Descriptions.Item label="问题类型">
                             {testCase.analysis.issue_type}
@@ -869,15 +871,15 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                     </Col>
                   </Row>
 
-                  <Card title="期望答案" size="small">
+                  <Card title={t('testCaseDetail.analysis.expectedAnswer')} size="small">
                     <Paragraph copyable>{testCase.analysis.expected_answer}</Paragraph>
                   </Card>
 
-                  <Card title="验收标准" size="small">
+                  <Card title={t('testCaseDetail.analysis.acceptanceCriteria')} size="small">
                     <Paragraph>{testCase.analysis.acceptance_criteria}</Paragraph>
                   </Card>
 
-                  <Card title="优化建议" size="small">
+                  <Card title={t('testCaseDetail.analysis.optimizationSuggestions')} size="small">
                     <ul>
                       {testCase.analysis.optimization_suggestions.map((suggestion, index) => (
                         <li key={index}>
@@ -887,7 +889,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                     </ul>
                   </Card>
 
-                  <Card title="分析笔记" size="small">
+                  <Card title={t('testCaseDetail.analysis.analysisNotes')} size="small">
                     <Paragraph>{testCase.analysis.notes}</Paragraph>
                   </Card>
                 </>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   Steps,
@@ -30,6 +31,7 @@ interface ImportTask {
   total: number
   processed: number
   failed: number
+  skipped: number
   startTime: string
   endTime?: string
 }
@@ -69,8 +71,35 @@ interface ValidationResult {
 }
 
 const ImportPage: React.FC = () => {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const [currentStep, setCurrentStep] = useState(0)
+
+  // Helper function for robust translation with interpolation
+  const translateWithValues = (key: string, values: Record<string, number | string> = {}) => {
+    try {
+      const result = t(key, values)
+      // If the result still contains placeholders, use template literals as fallback
+      if (typeof result === 'string' && (result.includes('{{') || result.includes('{'))) {
+        // For debugging in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`Translation interpolation failed for key "${key}", using fallback`)
+        }
+
+        // Simple template literal replacement
+        let fallback = result
+        Object.entries(values).forEach(([placeholder, value]) => {
+          fallback = fallback.replace(new RegExp(`{{${placeholder}}}`, 'g'), String(value))
+          fallback = fallback.replace(new RegExp(`{${placeholder}}`, 'g'), String(value))
+        })
+        return fallback
+      }
+      return result
+    } catch (error) {
+      console.error(`Translation error for key "${key}":`, error)
+      return key // Return the key as fallback
+    }
+  }
   const [loading, setLoading] = useState(false)
   const [sessionIds, setSessionIds] = useState<string[]>([])
   const [previewData, setPreviewData] = useState<PreviewSession[]>([])
@@ -118,12 +147,15 @@ const ImportPage: React.FC = () => {
       // 显示重复信息提示
       if (data.validation_result && data.validation_result.duplicate_count > 0) {
         const validation = data.validation_result
-        message.warning(`发现 ${validation.duplicate_count} 个重复会话，${validation.valid_sessions.length} 个新会话可以导入`)
+        message.warning(translateWithValues('import.duplicateWarning', {
+          duplicateCount: validation.duplicate_count,
+          validCount: validation.valid_sessions.length
+        }))
       } else {
-        message.success('预览数据加载成功')
+        message.success(t('import.previewLoadSuccess'))
       }
     } catch (error) {
-      message.error('加载预览数据失败')
+      message.error(t('import.previewLoadFailed'))
       console.error('Failed to load preview:', error)
     } finally {
       setLoading(false)
@@ -133,7 +165,7 @@ const ImportPage: React.FC = () => {
   // 开始导入
   const handleStartImport = async () => {
     if (!importConfig.defaultOwner) {
-      message.error('请输入负责人邮箱')
+      message.error(t('import.ownerRequired'))
       return
     }
 
@@ -145,6 +177,7 @@ const ImportPage: React.FC = () => {
         defaultPriority: importConfig.defaultPriority,
         defaultDifficulty: importConfig.defaultDifficulty,
         includeAnalysis: importConfig.includeAnalysis,
+        skipDuplicates: importConfig.skipDuplicates,
       })
 
       // Debug: Log the response structure
@@ -167,12 +200,12 @@ const ImportPage: React.FC = () => {
       })
 
       setCurrentStep(2)
-      message.success('导入任务已开始')
+      message.success(t('import.importStarted'))
 
       // 开始轮询进度
       pollProgress(response.data.data.task_id)
     } catch (error) {
-      message.error('开始导入失败')
+      message.error(t('import.importStartFailed'))
       console.error('Failed to start import:', error)
     } finally {
       setLoading(false)
@@ -195,12 +228,13 @@ const ImportPage: React.FC = () => {
           total: task.total,
           processed: task.processed,
           failed: task.failed,
+          skipped: task.skipped,
           startTime: task.start_time,
           endTime: task.end_time,
         })
 
         if (task.status === 'completed' || task.status === 'failed') {
-          message.success(task.status === 'completed' ? '导入完成' : '导入失败')
+          message.success(task.status === 'completed' ? t('import.importCompleted') : t('import.importFailed'))
           loadImportTasks()
         } else {
           setTimeout(poll, 2000) // 2秒后继续轮询
@@ -230,10 +264,10 @@ const ImportPage: React.FC = () => {
 
   const getStatusTag = (status: string) => {
     const statusConfig = {
-      pending: { color: 'default', icon: <ClockCircleOutlined />, text: '等待中' },
-      running: { color: 'processing', icon: <ClockCircleOutlined />, text: '进行中' },
-      completed: { color: 'success', icon: <CheckCircleOutlined />, text: '已完成' },
-      failed: { color: 'error', icon: <CheckCircleOutlined />, text: '失败' },
+      pending: { color: 'default', icon: <ClockCircleOutlined />, text: t('import.statusTags.pending') },
+      running: { color: 'processing', icon: <ClockCircleOutlined />, text: t('import.statusTags.running') },
+      completed: { color: 'success', icon: <CheckCircleOutlined />, text: t('import.statusTags.completed') },
+      failed: { color: 'error', icon: <CheckCircleOutlined />, text: t('import.statusTags.failed') },
     }
 
     const config = statusConfig[status] || statusConfig.pending
@@ -246,21 +280,21 @@ const ImportPage: React.FC = () => {
 
   const previewColumns: ColumnsType<PreviewSession> = [
     {
-      title: '会话ID',
+      title: t('import.tableLabels.sessionId'),
       dataIndex: 'session_id',
       key: 'session_id',
       width: 200,
       render: (text) => <Text code style={{ fontSize: 12 }}>{text}</Text>,
     },
     {
-      title: '消息数量',
+      title: t('import.tableLabels.messageCount'),
       dataIndex: 'message_count',
       key: 'message_count',
       width: 100,
-      render: (count) => <Tag color="blue">{count} 条</Tag>,
+      render: (count) => <Tag color="blue">{count} {t('import.tableTags.messageUnit')}</Tag>,
     },
     {
-      title: '首个问题',
+      title: t('import.tableLabels.firstMessage'),
       dataIndex: 'first_message',
       key: 'first_message',
       ellipsis: true,
@@ -271,7 +305,7 @@ const ImportPage: React.FC = () => {
       ),
     },
     {
-      title: '最后回答',
+      title: t('import.tableLabels.lastMessage'),
       dataIndex: 'last_message',
       key: 'last_message',
       ellipsis: true,
@@ -282,13 +316,13 @@ const ImportPage: React.FC = () => {
       ),
     },
     {
-      title: '用户评分',
+      title: t('import.tableLabels.userRating'),
       dataIndex: 'has_user_rating',
       key: 'has_user_rating',
       width: 100,
       render: (hasRating) => (
         <Tag color={hasRating ? 'green' : 'default'}>
-          {hasRating ? '已评分' : '未评分'}
+          {hasRating ? t('import.tableTags.rated') : t('import.tableTags.notRated')}
         </Tag>
       ),
     },
@@ -296,14 +330,14 @@ const ImportPage: React.FC = () => {
 
   const duplicateColumns: ColumnsType<DuplicateSessionInfo> = [
     {
-      title: '会话ID',
+      title: t('import.tableLabels.sessionId'),
       dataIndex: 'session_id',
       key: 'session_id',
       width: 200,
       render: (text) => <Text code style={{ fontSize: 12 }}>{text}</Text>,
     },
     {
-      title: '已存在测试用例',
+      title: t('import.tableLabels.existingTestCase'),
       dataIndex: 'existing_test_case_name',
       key: 'existing_test_case_name',
       ellipsis: true,
@@ -315,13 +349,13 @@ const ImportPage: React.FC = () => {
       ),
     },
     {
-      title: '负责人',
+      title: t('import.tableColumns.owner'),
       dataIndex: 'owner',
       key: 'owner',
       width: 120,
     },
     {
-      title: '原导入时间',
+      title: t('import.tableLabels.importDate'),
       dataIndex: 'import_date',
       key: 'import_date',
       width: 180,
@@ -331,38 +365,45 @@ const ImportPage: React.FC = () => {
 
   const taskColumns: ColumnsType<ImportTask> = [
     {
-      title: '任务ID',
+      title: t('import.tableColumns.taskId'),
       dataIndex: 'task_id',
       key: 'task_id',
       width: 200,
     },
     {
-      title: '状态',
+      title: t('import.tableColumns.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status) => getStatusTag(status),
     },
     {
-      title: '总数',
+      title: t('import.tableColumns.total'),
       dataIndex: 'total',
       key: 'total',
       width: 80,
     },
     {
-      title: '已处理',
+      title: t('import.tableColumns.processed'),
       dataIndex: 'processed',
       key: 'processed',
       width: 80,
     },
     {
-      title: '失败',
+      title: t('import.tableColumns.failed'),
       dataIndex: 'failed',
       key: 'failed',
       width: 80,
     },
     {
-      title: '开始时间',
+      title: t('import.tableColumns.skipped'),
+      dataIndex: 'skipped',
+      key: 'skipped',
+      width: 80,
+      render: (skipped) => skipped > 0 ? <Tag color="orange">{skipped}</Tag> : <Text type="secondary">0</Text>,
+    },
+    {
+      title: t('import.tableColumns.startTime'),
       dataIndex: 'start_time',
       key: 'start_time',
       width: 180,
@@ -377,24 +418,24 @@ const ImportPage: React.FC = () => {
   return (
     <div>
       <Card className="page-header">
-        <Title level={3} className="page-title">数据导入</Title>
+        <Title level={3} className="page-title">{t('import.title')}</Title>
         <Text className="page-description">
-          将选中的历史对话数据导入为标准化的测试用例
+          {t('import.pageDescription')}
         </Text>
       </Card>
 
       <Card style={{ marginBottom: 16 }}>
         <Steps current={currentStep} size="small">
-          <Step title="选择数据" description="从历史记录中选择要导入的会话" />
-          <Step title="配置导入" description="设置导入参数和负责人" />
-          <Step title="执行导入" description="处理数据并创建测试用例" />
+          <Step title={t('import.steps.selectData')} description={t('import.steps.selectDataDesc')} />
+          <Step title={t('import.steps.configImport')} description={t('import.steps.configImportDesc')} />
+          <Step title={t('import.steps.executeImport')} description={t('import.steps.executeImportDesc')} />
         </Steps>
       </Card>
 
       {currentStep === 0 && (
         <Card>
           <Alert
-            message="请先从历史记录页面选择要导入的会话数据"
+            message={t('import.alert')}
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
@@ -404,7 +445,7 @@ const ImportPage: React.FC = () => {
             icon={<ImportOutlined />}
             onClick={() => window.location.href = '/history'}
           >
-            前往历史记录页面
+            {t('import.goToHistory')}
           </Button>
         </Card>
       )}
@@ -412,29 +453,29 @@ const ImportPage: React.FC = () => {
       {currentStep === 1 && (
         <Card>
           <div style={{ marginBottom: 24 }}>
-            <Title level={4}>导入配置</Title>
+            <Title level={4}>{t('import.config.title')}</Title>
             <Row gutter={[16, 16]}>
               <Col span={12}>
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                   <div>
-                    <Text strong>负责人邮箱：</Text>
+                    <Text strong>{t('import.config.ownerEmail')}</Text>
                     <Input
-                      placeholder="请输入负责人邮箱"
+                      placeholder={t('import.config.ownerPlaceholder')}
                       style={{ width: '100%', marginTop: 8 }}
                       value={importConfig.defaultOwner}
                       onChange={(e) => setImportConfig(prev => ({ ...prev, defaultOwner: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <Text strong>默认优先级：</Text>
+                    <Text strong>{t('import.config.defaultPriority')}</Text>
                     <Select
                       style={{ width: '100%', marginTop: 8 }}
                       value={importConfig.defaultPriority}
                       onChange={(value) => setImportConfig(prev => ({ ...prev, defaultPriority: value }))}
                       options={[
-                        { label: '低', value: 'low' },
-                        { label: '中', value: 'medium' },
-                        { label: '高', value: 'high' },
+                        { label: t('priority.low'), value: 'low' },
+                        { label: t('priority.medium'), value: 'medium' },
+                        { label: t('priority.high'), value: 'high' },
                       ]}
                     />
                   </div>
@@ -443,26 +484,26 @@ const ImportPage: React.FC = () => {
               <Col span={12}>
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                   <div>
-                    <Text strong>默认难度：</Text>
+                    <Text strong>{t('import.config.defaultDifficulty')}</Text>
                     <Select
                       style={{ width: '100%', marginTop: 8 }}
                       value={importConfig.defaultDifficulty}
                       onChange={(value) => setImportConfig(prev => ({ ...prev, defaultDifficulty: value }))}
                       options={[
-                        { label: '简单', value: 'easy' },
-                        { label: '中等', value: 'medium' },
-                        { label: '困难', value: 'hard' },
+                        { label: t('difficulty.easy'), value: 'easy' },
+                        { label: t('difficulty.medium'), value: 'medium' },
+                        { label: t('difficulty.hard'), value: 'hard' },
                       ]}
                     />
                   </div>
                   <div>
                     <Space direction="vertical">
-                      <Text strong>高级选项：</Text>
+                      <Text strong>{t('import.config.advancedOptions')}</Text>
                       <Checkbox
                         checked={importConfig.includeAnalysis}
                         onChange={(e) => setImportConfig(prev => ({ ...prev, includeAnalysis: e.target.checked }))}
                       >
-                        自动生成分析数据
+                        {t('import.config.autoGenerateAnalysis')}
                       </Checkbox>
                     </Space>
                   </div>
@@ -472,8 +513,8 @@ const ImportPage: React.FC = () => {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <Title level={4}>预览数据</Title>
-            <Text>已选择 {sessionIds.length} 条会话记录，显示前 {Math.min(5, sessionIds.length)} 条预览</Text>
+            <Title level={4}>{t('import.preview.title')}</Title>
+            <Text>{t('import.preview.selected', { count: sessionIds.length, max: Math.min(5, sessionIds.length) })}</Text>
 
             {previewData.length > 0 && (
               <Table
@@ -487,48 +528,103 @@ const ImportPage: React.FC = () => {
             )}
           </div>
 
-          {/* 重复会话信息 */}
-          {duplicateSessions.length > 0 && (
+          {/* 重复会话检测和处理选项 */}
+          {validationResult && validationResult.duplicate_count > 0 && (
             <div style={{ marginBottom: 24 }}>
               <Title level={4}>
                 <span style={{ color: '#faad14' }}>
                   <ExclamationCircleOutlined style={{ marginRight: 8 }} />
-                  重复会话检测
+                  {t('import.duplicateDetection.title')}
                 </span>
               </Title>
+
+              {/* 概要信息 */}
               <Alert
-                message="发现重复会话"
-                description={`检测到 ${duplicateSessions.length} 个会话已被导入，这些会话将被跳过。`}
+                message={
+                  <div>
+                    <Text strong>
+                      {translateWithValues('import.duplicateDetection.summary', {
+                        total: validationResult.total_count,
+                        duplicates: validationResult.duplicate_count,
+                        new: validationResult.valid_sessions.length
+                      })}
+                    </Text>
+                    <div style={{ marginTop: 8 }}>
+                      <Text>
+                        {translateWithValues('import.duplicateDetection.description', {
+                          count: validationResult.duplicate_count
+                        })}
+                      </Text>
+                    </div>
+                  </div>
+                }
                 type="warning"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
+
+              {/* 导入选项 */}
+              <div style={{
+                backgroundColor: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: '6px',
+                padding: '16px',
+                marginBottom: 16
+              }}>
+                <Title level={5} style={{ margin: '0 0 12px 0', color: '#d48806' }}>
+                  {t('import.importOptions.title')}
+                </Title>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Checkbox
+                    checked={importConfig.skipDuplicates}
+                    onChange={(e) => setImportConfig(prev => ({ ...prev, skipDuplicates: e.target.checked }))}
+                    style={{ fontSize: '14px' }}
+                  >
+                    <Text strong style={{ color: importConfig.skipDuplicates ? '#52c41a' : '#d48806' }}>
+                      {importConfig.skipDuplicates
+                        ? translateWithValues('import.importOptions.skipDuplicates', {
+                            count: validationResult.valid_sessions.length
+                          })
+                        : translateWithValues('import.importOptions.importAllDuplicates', {
+                            count: validationResult.total_count
+                          })
+                      }
+                    </Text>
+                  </Checkbox>
+                  <Text type="secondary" style={{ fontSize: '12px', marginLeft: '24px' }}>
+                    {importConfig.skipDuplicates
+                      ? t('import.importOptions.skipDescription')
+                      : t('import.importOptions.importAllDescription')
+                    }
+                  </Text>
+                </Space>
+              </div>
+
+              {/* 重复会话详情 */}
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => {
+                    // Toggle detail visibility logic could be added here
+                  }}
+                >
+                  {t('import.duplicateDetection.toggleDetails')} ({duplicateSessions.length})
+                </Button>
+              </div>
+
               <Table
                 columns={duplicateColumns}
                 dataSource={duplicateSessions}
                 rowKey="session_id"
                 pagination={false}
                 size="small"
-                style={{ marginBottom: 16 }}
+                style={{
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '6px'
+                }}
               />
-            </div>
-          )}
-
-          {/* 导入选项 */}
-          {validationResult && validationResult.duplicate_count > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <Title level={4}>导入选项</Title>
-              <Space direction="vertical">
-                <Checkbox
-                  checked={importConfig.skipDuplicates}
-                  onChange={(e) => setImportConfig(prev => ({ ...prev, skipDuplicates: e.target.checked }))}
-                >
-                  跳过重复会话，仅导入新会话 ({validationResult.valid_sessions.length} 个)
-                </Checkbox>
-                <Text type="secondary">
-                  如取消勾选，重复会话将作为新测试用例导入，但不推荐此操作。
-                </Text>
-              </Space>
             </div>
           )}
 
@@ -540,13 +636,15 @@ const ImportPage: React.FC = () => {
               loading={loading}
               disabled={!importConfig.defaultOwner}
             >
-              开始导入 {validationResult && validationResult.duplicate_count > 0 ?
-                `(${validationResult.valid_sessions.length} 个新会话)` :
-                `(${sessionIds.length} 个会话)`
+              {validationResult && validationResult.duplicate_count > 0
+                ? importConfig.skipDuplicates
+                  ? translateWithValues('import.importOnlyNewButton', { count: validationResult.valid_sessions.length })
+                  : translateWithValues('import.importAllButton', { count: validationResult.total_count })
+                : translateWithValues('import.importAllButton', { count: sessionIds.length })
               }
             </Button>
             <Button onClick={() => setCurrentStep(0)}>
-              返回选择
+              {t('import.returnButton')}
             </Button>
           </Space>
         </Card>
@@ -555,11 +653,11 @@ const ImportPage: React.FC = () => {
       {currentStep === 2 && currentTask && (
         <Card>
           <div style={{ marginBottom: 24 }}>
-            <Title level={4}>导入进度</Title>
+            <Title level={4}>{t('import.progress.title')}</Title>
             <div style={{ marginBottom: 16 }}>
-              <Text>任务ID：{currentTask.taskId}</Text>
+              <Text>{t('import.progress.taskId')}{currentTask.taskId}</Text>
               <br />
-              <Text>状态：{getStatusTag(currentTask.status)}</Text>
+              <Text>{t('import.progress.status')}{getStatusTag(currentTask.status)}</Text>
             </div>
 
             <Progress
@@ -569,19 +667,22 @@ const ImportPage: React.FC = () => {
             />
 
             <Space>
-              <Text>总计：{currentTask.total}</Text>
-              <Text>已处理：{currentTask.processed}</Text>
-              <Text>失败：{currentTask.failed}</Text>
+              <Text>{t('import.progress.total')}{currentTask.total}</Text>
+              <Text>{t('import.progress.processed')}{currentTask.processed}</Text>
+              <Text>{t('import.progress.failed')}{currentTask.failed}</Text>
+              {currentTask.skipped > 0 && (
+                <Text type="warning">{t('import.progress.skipped')}{currentTask.skipped}</Text>
+              )}
             </Space>
           </div>
 
           {(currentTask.status === 'completed' || currentTask.status === 'failed') && (
             <Space>
               <Button onClick={() => window.location.href = '/test-cases'}>
-                查看测试用例
+                {t('import.progress.viewTestCases')}
               </Button>
               <Button onClick={() => setCurrentStep(0)}>
-                导入更多数据
+                {t('import.progress.importMore')}
               </Button>
             </Space>
           )}
@@ -589,7 +690,7 @@ const ImportPage: React.FC = () => {
       )}
 
       <Card>
-        <Title level={4}>导入历史</Title>
+        <Title level={4}>{t('import.history.title')}</Title>
         <Table
           columns={taskColumns}
           dataSource={importTasks}

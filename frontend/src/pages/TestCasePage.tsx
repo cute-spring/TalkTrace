@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Card,
   Table,
@@ -46,6 +47,7 @@ interface TestCase {
 }
 
 const TestCasePage: React.FC = () => {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -57,6 +59,27 @@ const TestCasePage: React.FC = () => {
   const [currentTestCase, setCurrentTestCase] = useState<TestCase | null>(null)
   const [currentTestCaseId, setCurrentTestCaseId] = useState<string>('')
   const [form] = Form.useForm()
+
+  // Helper function for robust translation with interpolation
+  const translateWithValues = (key: string, values: Record<string, number | string> = {}) => {
+    try {
+      const result = t(key, values)
+      // If the result still contains placeholders, do manual replacement
+      if (typeof result === 'string' && (result.includes('{{') || result.includes('{'))) {
+        let fallback = result
+        Object.entries(values).forEach(([placeholder, value]) => {
+          // Try both {{}} and {} syntax
+          fallback = fallback.replace(new RegExp(`{{${placeholder}}}`, 'g'), String(value))
+          fallback = fallback.replace(new RegExp(`{${placeholder}}}`, 'g'), String(value))
+        })
+        return fallback
+      }
+      return result
+    } catch (error) {
+      console.error(`Translation error for key "${key}":`, error)
+      return key // Return the key as fallback
+    }
+  }
 
   // Initialize filters from URL parameters
   const [filters, setFilters] = useState({
@@ -93,7 +116,7 @@ const TestCasePage: React.FC = () => {
       // Fix: Access the nested data structure correctly
       setData(response.data.data)
     } catch (error) {
-      message.error('获取测试用例列表失败')
+      message.error(t('testCases.fetchFailed'))
       console.error('Failed to fetch test cases:', error)
     } finally {
       setLoading(false)
@@ -152,16 +175,16 @@ const TestCasePage: React.FC = () => {
 
   const handleDelete = (record: TestCase) => {
     confirm({
-      title: '确认删除',
+      title: t('testCases.confirmDeleteTitle'),
       icon: <ExclamationCircleOutlined />,
-      content: `确定要删除测试用例"${record.name}"吗？`,
+      content: translateWithValues('testCases.confirmDeleteContent', { name: record.name }),
       onOk: async () => {
         try {
           await testCaseService.delete(record.id)
-          message.success('删除成功')
+          message.success(t('testCases.deleteSuccess'))
           fetchTestCases()
         } catch (error) {
-          message.error('删除失败')
+          message.error(t('testCases.deleteFailed'))
           console.error('Failed to delete test case:', error)
         }
       },
@@ -170,25 +193,25 @@ const TestCasePage: React.FC = () => {
 
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请选择要删除的测试用例')
+      message.warning(t('validation.testCaseNameRequired'))
       return
     }
 
     confirm({
-      title: '批量删除',
+      title: t('testCases.batchDelete.title'),
       icon: <ExclamationCircleOutlined />,
-      content: `确定要删除选中的 ${selectedRowKeys.length} 个测试用例吗？`,
+      content: translateWithValues('testCases.batchDelete.confirm', { count: selectedRowKeys.length }),
       onOk: async () => {
         try {
           await testCaseService.batchOperation({
             action: 'delete',
             ids: selectedRowKeys,
           })
-          message.success('批量删除成功')
+          message.success(t('testCases.batchDeleteSuccess'))
           setSelectedRowKeys([])
           fetchTestCases()
         } catch (error) {
-          message.error('批量删除失败')
+          message.error(t('testCases.batchDeleteFailed'))
           console.error('Failed to batch delete:', error)
         }
       },
@@ -206,22 +229,22 @@ const TestCasePage: React.FC = () => {
 
     try {
       await testCaseService.update(currentTestCase.id, values)
-      message.success('更新成功')
+      message.success(t('testCases.updateSuccess'))
       setEditModalVisible(false)
       fetchTestCases()
     } catch (error) {
-      message.error('更新失败')
+      message.error(t('testCases.updateFailed'))
       console.error('Failed to update test case:', error)
     }
   }
 
   const getStatusTag = (status: string) => {
     const statusConfig = {
-      draft: { color: 'default', text: '草稿' },
-      pending_review: { color: 'processing', text: '待审核' },
-      approved: { color: 'success', text: '已审核' },
-      published: { color: 'success', text: '已发布' },
-      rejected: { color: 'error', text: '已拒绝' },
+      draft: { color: 'default', text: t('status.draft') },
+      pending_review: { color: 'processing', text: t('status.pending_review') },
+      approved: { color: 'success', text: t('status.approved') },
+      published: { color: 'success', text: t('status.published') },
+      rejected: { color: 'error', text: t('status.rejected') },
     }
 
     const config = statusConfig[status] || statusConfig.draft
@@ -230,9 +253,9 @@ const TestCasePage: React.FC = () => {
 
   const getPriorityTag = (priority: string) => {
     const priorityConfig = {
-      low: { color: 'green', text: '低' },
-      medium: { color: 'orange', text: '中' },
-      high: { color: 'red', text: '高' },
+      low: { color: 'green', text: t('priority.low') },
+      medium: { color: 'orange', text: t('priority.medium') },
+      high: { color: 'red', text: t('priority.high') },
     }
 
     const config = priorityConfig[priority] || priorityConfig.medium
@@ -241,7 +264,7 @@ const TestCasePage: React.FC = () => {
 
   const columns: ColumnsType<TestCase> = [
     {
-      title: '名称',
+      title: t('testCases.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (text, record) => (
@@ -253,41 +276,41 @@ const TestCasePage: React.FC = () => {
       ),
     },
     {
-      title: '状态',
+      title: t('testCases.columns.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status) => getStatusTag(status),
     },
     {
-      title: '优先级',
+      title: t('testCases.columns.priority'),
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
       render: (priority) => getPriorityTag(priority),
     },
     {
-      title: '领域',
+      title: t('testCases.columns.domain'),
       dataIndex: 'domain',
       key: 'domain',
       width: 100,
       render: (domain) => domain ? <Tag>{domain}</Tag> : '-',
     },
     {
-      title: '难度',
+      title: t('testCases.columns.difficulty'),
       dataIndex: 'difficulty',
       key: 'difficulty',
       width: 80,
       render: (difficulty) => difficulty ? <Tag>{difficulty}</Tag> : '-',
     },
     {
-      title: '负责人',
+      title: t('testCases.columns.owner'),
       dataIndex: 'owner',
       key: 'owner',
       width: 200,
     },
     {
-      title: '标签',
+      title: t('testCases.columns.tags'),
       dataIndex: 'tags',
       key: 'tags',
       width: 200,
@@ -302,14 +325,14 @@ const TestCasePage: React.FC = () => {
       ),
     },
     {
-      title: '创建时间',
+      title: t('testCases.columns.createdTime'),
       dataIndex: 'created_date',
       key: 'created_date',
       width: 180,
       render: (time) => new Date(time).toLocaleString(),
     },
     {
-      title: '操作',
+      title: t('testCases.columns.actions'),
       key: 'actions',
       width: 200,
       render: (_, record) => (
@@ -320,7 +343,7 @@ const TestCasePage: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => handleViewDetails(record)}
           >
-            详情
+            {t('testCases.details')}
           </Button>
           <Button
             type="link"
@@ -328,7 +351,7 @@ const TestCasePage: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
-            编辑
+            {t('testCases.edit')}
           </Button>
           <Button
             type="link"
@@ -337,7 +360,7 @@ const TestCasePage: React.FC = () => {
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
           >
-            删除
+            {t('testCases.delete')}
           </Button>
         </Space>
       ),
@@ -354,57 +377,57 @@ const TestCasePage: React.FC = () => {
   return (
     <div>
       <Card className="page-header">
-        <Title level={3} className="page-title">测试用例管理</Title>
+        <Title level={3} className="page-title">{t('testCases.title')}</Title>
         <Text className="page-description">
-          管理和编辑从历史记录导入的测试用例
+          {t('testCases.pageDescription')}
         </Text>
       </Card>
 
       <Card className="search-form">
         <Space wrap size="middle">
           <Input
-            placeholder="搜索测试用例"
+            placeholder={t('testCases.searchPlaceholder')}
             style={{ width: 250 }}
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
           />
 
           <Select
-            placeholder="状态"
+            placeholder={t('testCases.columns.status')}
             style={{ width: 120 }}
             value={filters.status}
             onChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
             allowClear
           >
-            <Option value="draft">草稿</Option>
-            <Option value="pending_review">待审核</Option>
-            <Option value="approved">已审核</Option>
-            <Option value="published">已发布</Option>
+            <Option value="draft">{t('status.draft')}</Option>
+            <Option value="pending_review">{t('status.pending_review')}</Option>
+            <Option value="approved">{t('status.approved')}</Option>
+            <Option value="published">{t('status.published')}</Option>
           </Select>
 
           <Select
-            placeholder="优先级"
+            placeholder={t('testCases.columns.priority')}
             style={{ width: 100 }}
             value={filters.priority}
             onChange={(value) => setFilters(prev => ({ ...prev, priority: value }))}
             allowClear
           >
-            <Option value="low">低</Option>
-            <Option value="medium">中</Option>
-            <Option value="high">高</Option>
+            <Option value="low">{t('priority.low')}</Option>
+            <Option value="medium">{t('priority.medium')}</Option>
+            <Option value="high">{t('priority.high')}</Option>
           </Select>
 
           <Select
-            placeholder="领域"
+            placeholder={t('testCases.columns.domain')}
             style={{ width: 120 }}
             value={filters.domain}
             onChange={(value) => setFilters(prev => ({ ...prev, domain: value }))}
             allowClear
           >
-            <Option value="finance">金融</Option>
-            <Option value="technology">技术</Option>
-            <Option value="healthcare">医疗</Option>
-            <Option value="general">通用</Option>
+            <Option value="finance">{t('domain.finance')}</Option>
+            <Option value="technology">{t('domain.technology')}</Option>
+            <Option value="healthcare">{t('domain.healthcare')}</Option>
+            <Option value="general">{t('domain.general')}</Option>
           </Select>
 
           <Button
@@ -412,20 +435,32 @@ const TestCasePage: React.FC = () => {
             icon={<SearchOutlined />}
             onClick={handleSearch}
           >
-            搜索
+            {t('common.search')}
           </Button>
         </Space>
 
         {selectedRowKeys.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <Space>
-              <Text>已选择 {selectedRowKeys.length} 项</Text>
+              <Text style={{ fontWeight: 'bold' }}>
+                {(() => {
+                  const count = selectedRowKeys.length;
+                  // Use the translateWithValues helper function
+                  const translation = translateWithValues('testCases.selectedItems', { count });
+                  // Double-check that interpolation worked
+                  if (translation.includes('{count}')) {
+                    // Fallback to manual interpolation
+                    return `Selected ${count} item${count === 1 ? '' : 's'}`;
+                  }
+                  return translation;
+                })()}
+              </Text>
               <Button
                 danger
                 icon={<DeleteOutlined />}
                 onClick={handleBatchDelete}
               >
-                批量删除
+                {t('testCases.batchDelete.title')}
               </Button>
             </Space>
           </div>
@@ -446,7 +481,7 @@ const TestCasePage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+              translateWithValues('common.page', { start: range[0], end: range[1], total: total }),
             onChange: (page, pageSize) => {
               const newPageSize = pageSize || 20
               setFilters(prev => ({ ...prev, page, pageSize: newPageSize }))
@@ -463,7 +498,7 @@ const TestCasePage: React.FC = () => {
 
       {/* 编辑模态框 */}
       <Modal
-        title="编辑测试用例"
+        title={t('testCases.editModal.title')}
         open={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
         onOk={() => form.submit()}
@@ -475,48 +510,48 @@ const TestCasePage: React.FC = () => {
           onFinish={handleSubmit}
         >
           <Form.Item
-            label="名称"
+            label={t('testCases.name')}
             name="name"
-            rules={[{ required: true, message: '请输入测试用例名称' }]}
+            rules={[{ required: true, message: t('testCases.editModal.nameRequired') }]}
           >
             <Input />
           </Form.Item>
 
-          <Form.Item label="描述" name="description">
+          <Form.Item label={t('testCases.description')} name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
 
-          <Form.Item label="状态" name="status">
+          <Form.Item label={t('testCases.columns.status')} name="status">
             <Select>
-              <Option value="draft">草稿</Option>
-              <Option value="pending_review">待审核</Option>
-              <Option value="approved">已审核</Option>
-              <Option value="published">已发布</Option>
+              <Option value="draft">{t('status.draft')}</Option>
+              <Option value="pending_review">{t('status.pending_review')}</Option>
+              <Option value="approved">{t('status.approved')}</Option>
+              <Option value="published">{t('status.published')}</Option>
             </Select>
           </Form.Item>
 
-          <Form.Item label="优先级" name="priority">
+          <Form.Item label={t('testCases.columns.priority')} name="priority">
             <Select>
-              <Option value="low">低</Option>
-              <Option value="medium">中</Option>
-              <Option value="high">高</Option>
+              <Option value="low">{t('priority.low')}</Option>
+              <Option value="medium">{t('priority.medium')}</Option>
+              <Option value="high">{t('priority.high')}</Option>
             </Select>
           </Form.Item>
 
-          <Form.Item label="领域" name="domain">
+          <Form.Item label={t('testCases.columns.domain')} name="domain">
             <Select allowClear>
-              <Option value="finance">金融</Option>
-              <Option value="technology">技术</Option>
-              <Option value="healthcare">医疗</Option>
-              <Option value="general">通用</Option>
+              <Option value="finance">{t('domain.finance')}</Option>
+              <Option value="technology">{t('domain.technology')}</Option>
+              <Option value="healthcare">{t('domain.healthcare')}</Option>
+              <Option value="general">{t('domain.general')}</Option>
             </Select>
           </Form.Item>
 
-          <Form.Item label="难度" name="difficulty">
+          <Form.Item label={t('testCases.columns.difficulty')} name="difficulty">
             <Select allowClear>
-              <Option value="easy">简单</Option>
-              <Option value="medium">中等</Option>
-              <Option value="hard">困难</Option>
+              <Option value="easy">{t('difficulty.easy')}</Option>
+              <Option value="medium">{t('difficulty.medium')}</Option>
+              <Option value="hard">{t('difficulty.hard')}</Option>
             </Select>
           </Form.Item>
         </Form>
@@ -524,7 +559,7 @@ const TestCasePage: React.FC = () => {
 
       {/* 详情抽屉 */}
       <Drawer
-        title="测试用例详情"
+        title={t('testCases.detailDrawer.title')}
         open={detailDrawerVisible}
         onClose={() => setDetailDrawerVisible(false)}
         width={800}
@@ -532,37 +567,37 @@ const TestCasePage: React.FC = () => {
         {currentTestCase && (
           <div>
             <div style={{ marginBottom: 16 }}>
-              <Text strong>名称：</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.name')}</Text>
               <Text>{currentTestCase.name}</Text>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text strong>描述：</Text>
-              <Text>{currentTestCase.description || '无'}</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.description')}</Text>
+              <Text>{currentTestCase.description || t('testCaseDetail.noDescription')}</Text>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text strong>状态：</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.status')}</Text>
               {getStatusTag(currentTestCase.status)}
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text strong>优先级：</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.priority')}</Text>
               {getPriorityTag(currentTestCase.priority)}
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text strong>负责人：</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.owner')}</Text>
               <Text>{currentTestCase.owner}</Text>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text strong>创建时间：</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.createdTime')}</Text>
               <Text>{new Date(currentTestCase.createdDate).toLocaleString()}</Text>
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text strong>更新时间：</Text>
+              <Text strong>{t('testCaseDetail.basicInfo.updatedTime')}</Text>
               <Text>{new Date(currentTestCase.updatedDate).toLocaleString()}</Text>
             </div>
           </div>

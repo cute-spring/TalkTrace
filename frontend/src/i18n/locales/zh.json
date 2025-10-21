@@ -21,9 +21,13 @@
     "model": "模型",
     "selectModel": "选择模型",
     "rating": "评分",
+    "selectRatingRange": "选择评分范围",
     "search": "搜索",
     "reset": "重置",
     "export": "导出",
+    "rating1-2": "1-2星",
+    "rating3-4": "3-4星",
+    "rating5": "5星",
     "columns": {
       "sessionId": "会话ID",
       "userQuery": "用户查询",
@@ -33,7 +37,30 @@
       "timestamp": "时间戳"
     },
     "retrievalChunks": "检索块",
-    "noData": "未找到数据"
+    "noData": "未找到数据",
+    "modal": {
+      "sessionId": "会话ID：",
+      "model": "模型：",
+      "userQuery": "用户问题：",
+      "aiResponse": "AI回答：",
+      "retrievalChunks": "检索片段：",
+      "chunk": "片段",
+      "confidence": "置信度：",
+      "source": "来源：",
+      "unknownSource": "未知来源",
+      "content": "内容：",
+      "published": "发布：",
+      "effective": "生效：",
+      "expired": "过期：",
+      "unclassified": "未分类",
+      "rank": "排序：",
+      "userRating": "用户评分：",
+      "createdAt": "创建时间：",
+      "noChunks": "暂无检索片段信息"
+    },
+    "selectedRecords": "已选择 {{count}} 条记录",
+    "pagination": "第 {{start}}-{{end}} 条，共 {{total}} 条",
+    "importSelected": "导入选中记录"
   },
   "import": {
     "title": "数据导入",
@@ -45,7 +72,123 @@
     "cancel": "取消",
     "success": "导入成功",
     "error": "导入失败",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "steps": {
+      "selectData": "选择数据",
+      "selectDataDesc": "从历史记录中选择要导入的会话",
+      "configImport": "配置导入",
+      "configImportDesc": "设置导入参数和负责人",
+      "executeImport": "执行导入",
+      "executeImportDesc": "处理数据并创建测试用例"
+    },
+    "config": {
+      "title": "导入配置",
+      "ownerEmail": "负责人邮箱：",
+      "ownerPlaceholder": "请输入负责人邮箱",
+      "defaultPriority": "默认优先级：",
+      "defaultDifficulty": "默认难度：",
+      "advancedOptions": "高级选项：",
+      "autoGenerateAnalysis": "自动生成分析数据"
+    },
+    "preview": {
+      "title": "预览数据",
+      "selected": "已选择 {{count}} 条会话记录，显示前 {{max}} 条预览",
+      "columns": {
+        "sessionId": "会话ID",
+        "messageCount": "消息数量",
+        "firstQuestion": "首个问题",
+        "lastAnswer": "最后回答",
+        "userRating": "用户评分"
+      },
+      "hasRating": "已评分",
+      "notRated": "未评分"
+    },
+    "duplicateDetection": {
+      "title": "重复会话检测",
+      "found": "发现重复会话",
+      "summary": "在总计 {total} 个会话中发现 {duplicates} 个重复会话和 {new} 个新会话",
+      "description": "检测到 {count} 个会话已被导入，这些会话将被跳过。",
+      "toggleDetails": "显示/隐藏重复详情",
+      "columns": {
+        "sessionId": "会话ID",
+        "existingTestCase": "已存在测试用例",
+        "owner": "负责人",
+        "importDate": "原导入时间"
+      }
+    },
+    "importOptions": {
+      "title": "导入选项",
+      "skipDuplicates": "跳过重复会话，仅导入新会话 ({count} 个新会话)",
+      "importAllDuplicates": "导入所有会话，包括重复会话 ({count} 个总计)",
+      "skipWarning": "如取消勾选，重复会话将作为新测试用例导入，但不推荐此操作。",
+      "skipDescription": "推荐：只导入测试用例数据库中不存在的会话。",
+      "importAllDescription": "不推荐：这将为已存在的会话创建重复的测试用例。"
+    },
+    "progress": {
+      "title": "导入进度",
+      "taskId": "任务ID：",
+      "status": "状态：",
+      "total": "总计：",
+      "processed": "已处理：",
+      "failed": "失败：",
+      "skipped": "跳过：",
+      "completed": "导入完成",
+      "viewTestCases": "查看测试用例",
+      "importMore": "导入更多数据"
+    },
+    "history": {
+      "title": "导入历史"
+    },
+    "startButton": "开始导入 ({count} 个会话)",
+    "importOnlyNewButton": "仅导入新会话 ({count})",
+    "importAllButton": "导入所有会话 ({count})",
+    "returnButton": "返回选择",
+    "alert": "请先从历史记录页面选择要导入的会话数据",
+    "goToHistory": "前往历史记录页面",
+    "status": {
+      "pending": "等待中",
+      "running": "进行中",
+      "completed": "已完成",
+      "failed": "失败"
+    },
+    "statusTags": {
+      "pending": "等待中",
+      "running": "进行中",
+      "completed": "已完成",
+      "failed": "失败"
+    },
+    "ownerRequired": "请输入负责人邮箱",
+    "previewLoadSuccess": "预览数据加载成功",
+    "previewLoadFailed": "加载预览数据失败",
+    "duplicateWarning": "发现 {duplicateCount} 个重复会话，{validCount} 个新会话可以导入",
+    "importStarted": "导入任务已开始",
+    "importStartFailed": "开始导入失败",
+    "importCompleted": "导入完成",
+    "importFailed": "导入失败",
+    "tableColumns": {
+      "taskId": "任务ID",
+      "status": "状态",
+      "total": "总数",
+      "processed": "已处理",
+      "failed": "失败",
+      "skipped": "跳过",
+      "startTime": "开始时间"
+    },
+    "tableLabels": {
+      "sessionId": "会话ID",
+      "messageCount": "消息数量",
+      "firstMessage": "首个问题",
+      "lastMessage": "最后回答",
+      "userRating": "用户评分",
+      "existingTestCase": "已存在测试用例",
+      "importDate": "原导入时间"
+    },
+    "tableTags": {
+      "rated": "已评分",
+      "notRated": "未评分",
+      "messageUnit": "条"
+    },
+    "pageDescription": "将选中的历史对话数据导入为标准化的测试用例"
   },
   "testCases": {
     "title": "测试用例管理",
@@ -62,7 +205,42 @@
     "actions": "操作",
     "active": "活跃",
     "inactive": "非活跃",
-    "confirmDelete": "确定要删除此测试用例吗？"
+    "confirmDelete": "确定要删除此测试用例吗？",
+    "columns": {
+      "name": "名称",
+      "status": "状态",
+      "priority": "优先级",
+      "domain": "领域",
+      "difficulty": "难度",
+      "owner": "负责人",
+      "tags": "标签",
+      "createdTime": "创建时间",
+      "actions": "操作"
+    },
+    "searchPlaceholder": "搜索测试用例",
+    "editModal": {
+      "title": "编辑测试用例",
+      "nameRequired": "请输入测试用例名称"
+    },
+    "detailDrawer": {
+      "title": "测试用例详情"
+    },
+    "batchDelete": {
+      "title": "批量删除",
+      "confirm": "确定要删除选中的 {count} 个测试用例吗？"
+    },
+    "selectedItems": "已选择 {count} 项",
+    "pageDescription": "管理和编辑从历史记录导入的测试用例",
+    "confirmDeleteTitle": "确认删除",
+    "confirmDeleteContent": "确定要删除测试用例\"{name}\"吗？",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败",
+    "batchDeleteSuccess": "批量删除成功",
+    "batchDeleteFailed": "批量删除失败",
+    "updateSuccess": "更新成功",
+    "updateFailed": "更新失败",
+    "fetchFailed": "获取测试用例列表失败",
+    "details": "详情"
   },
   "common": {
     "loading": "加载中...",
@@ -93,6 +271,296 @@
     "noData": "暂无数据",
     "selectAll": "全选",
     "clearSelection": "清空选择",
-    "view": "查看详情"
+    "view": "查看详情",
+    "all": "全部",
+    "actions": "操作",
+    "details": "详情",
+    "editDetails": "编辑详情"
+  },
+  "status": {
+    "draft": "草稿",
+    "pending_review": "待审核",
+    "approved": "已审核",
+    "published": "已发布",
+    "rejected": "已拒绝"
+  },
+  "priority": {
+    "low": "低",
+    "medium": "中",
+    "high": "高"
+  },
+  "domain": {
+    "finance": "金融",
+    "technology": "技术",
+    "healthcare": "医疗",
+    "general": "通用"
+  },
+  "difficulty": {
+    "easy": "简单",
+    "medium": "中等",
+    "hard": "困难"
+  },
+  "validation": {
+    "required": "此字段为必填项",
+    "email": "请输入有效的邮箱地址",
+    "nameRequired": "请输入名称",
+    "testCaseNameRequired": "请输入测试用例名称"
+  },
+  "testCaseDetail": {
+    "modal": {
+      "title": "测试用例详情",
+      "close": "关闭"
+    },
+    "tabs": {
+      "overview": "概览",
+      "context": "对话上下文",
+      "config": "配置",
+      "execution": "执行结果",
+      "analysis": "分析"
+    },
+    "performanceMetrics": {
+      "title": "性能指标",
+      "totalResponseTime": "总响应时间",
+      "retrievalTime": "检索时间",
+      "generationTime": "生成时间",
+      "tokenUsage": "Token使用",
+      "retrievedChunks": "检索片段数"
+    },
+    "userFeedback": {
+      "title": "用户反馈",
+      "rating": "评分：",
+      "category": "分类：",
+      "comment": "评论：",
+      "concern": "问题：",
+      "improvement": "改进建议："
+    },
+    "currentQuery": {
+      "title": "当前查询"
+    },
+    "conversationHistory": {
+      "title": "对话历史",
+      "columns": {
+        "turn": "轮次",
+        "role": "角色",
+        "content": "内容",
+        "time": "时间"
+      },
+      "user": "用户",
+      "assistant": "AI",
+      "system": "系统",
+      "userLabel": "用户：",
+      "aiLabel": "AI："
+    },
+    "retrievedChunks": {
+      "title": "检索片段",
+      "columns": {
+        "rank": "排名",
+        "title": "标题",
+        "similarity": "相似度",
+        "contentPreview": "内容预览"
+      }
+    },
+    "modelConfig": {
+      "title": "模型配置",
+      "modelName": "模型名称：",
+      "version": "版本：",
+      "parameters": "参数："
+    },
+    "promptConfig": {
+      "title": "提示词配置",
+      "systemPrompt": "系统提示词：",
+      "userInstruction": "用户指令："
+    },
+    "retrievalConfig": {
+      "title": "检索配置",
+      "topK": "Top-K：",
+      "similarityThreshold": "相似度阈值：",
+      "reranker": "重排序：",
+      "enabled": "启用",
+      "disabled": "禁用"
+    },
+    "aiResponse": {
+      "title": "AI回答"
+    },
+    "retrievalQuality": {
+      "title": "检索质量",
+      "maxSimilarity": "最大相似度",
+      "avgSimilarity": "平均相似度",
+      "diversityScore": "多样性分数"
+    },
+    "analysis": {
+      "editAnalysis": "编辑分析",
+      "saveAnalysis": "保存分析",
+      "cancel": "取消",
+      "problemAnalysis": "问题分析",
+      "qualityScore": "质量评分",
+      "expectedAnswer": "期望答案",
+      "acceptanceCriteria": "验收标准",
+      "optimizationSuggestions": "优化建议",
+      "analysisNotes": "分析笔记",
+      "contextUnderstanding": "上下文理解",
+      "answerAccuracy": "回答准确性",
+      "answerCompleteness": "回答完整性",
+      "clarity": "清晰度",
+      "citationQuality": "引用质量",
+      "analysisInfo": "分析信息",
+      "issueType": "问题类型：",
+      "rootCause": "根本原因：",
+      "analyst": "分析人员：",
+      "analysisTime": "分析时间：",
+      "noAnalysisData": "暂无分析数据",
+      "startAnalysisHint": "点击上方'编辑分析'按钮开始分析。",
+      "issueTypes": {
+        "good_example": "优秀案例",
+        "context_understanding": "上下文理解",
+        "answer_quality": "回答质量",
+        "retrieval_quality": "检索质量",
+        "response_format": "回答格式",
+        "other": "其他问题"
+      },
+      "placeholders": {
+        "rootCause": "分析问题的根本原因...",
+        "expectedAnswer": "描述理想情况下AI应该如何回答这个问题...",
+        "acceptanceCriteria": "描述该测试用例通过的标准...",
+        "optimizationSuggestions": "每行输入一条优化建议...",
+        "analysisNotes": "记录分析过程中的重要发现和思考..."
+      }
+    },
+    "basicInfo": {
+      "name": "名称：",
+      "description": "描述：",
+      "status": "状态：",
+      "priority": "优先级：",
+      "owner": "负责人：",
+      "createdTime": "创建时间：",
+      "updatedTime": "更新时间："
+    },
+    "noDescription": "无描述"
+  },
+  "tabs": {
+    "overview": "概览",
+    "context": "对话上下文",
+    "config": "配置",
+    "execution": "执行结果",
+    "analysis": "分析"
+  },
+  "performanceMetrics": {
+    "title": "性能指标",
+    "totalResponseTime": "总响应时间",
+    "retrievalTime": "检索时间",
+    "generationTime": "生成时间",
+    "tokenUsage": "Token使用",
+    "retrievedChunks": "检索片段数"
+  },
+  "userFeedback": {
+    "title": "用户反馈",
+    "rating": "评分：",
+    "category": "分类：",
+    "comment": "评论：",
+    "concern": "问题：",
+    "improvement": "改进建议："
+  },
+  "currentQuery": {
+    "title": "当前查询"
+  },
+  "conversationHistory": {
+    "title": "对话历史",
+    "columns": {
+      "turn": "轮次",
+      "role": "角色",
+      "content": "内容",
+      "time": "时间"
+    },
+    "user": "用户",
+    "assistant": "AI",
+    "system": "系统",
+    "userLabel": "用户：",
+    "aiLabel": "AI："
+  },
+  "retrievedChunks": {
+    "title": "检索片段",
+    "columns": {
+      "rank": "排名",
+      "title": "标题",
+      "similarity": "相似度",
+      "contentPreview": "内容预览"
+    }
+  },
+  "modelConfig": {
+    "title": "模型配置",
+    "modelName": "模型名称：",
+    "version": "版本：",
+    "parameters": "参数："
+  },
+  "promptConfig": {
+    "title": "提示词配置",
+    "systemPrompt": "系统提示词：",
+    "userInstruction": "用户指令："
+  },
+  "retrievalConfig": {
+    "title": "检索配置",
+    "topK": "Top-K：",
+    "similarityThreshold": "相似度阈值：",
+    "reranker": "重排序：",
+    "enabled": "启用",
+    "disabled": "禁用"
+  },
+  "aiResponse": {
+    "title": "AI回答"
+  },
+  "retrievalQuality": {
+    "title": "检索质量",
+    "maxSimilarity": "最大相似度",
+    "avgSimilarity": "平均相似度",
+    "diversityScore": "多样性分数"
+  },
+  "analysis": {
+    "editAnalysis": "编辑分析",
+    "saveAnalysis": "保存分析",
+    "cancel": "取消",
+    "problemAnalysis": "问题分析",
+    "qualityScore": "质量评分",
+    "expectedAnswer": "期望答案",
+    "acceptanceCriteria": "验收标准",
+    "optimizationSuggestions": "优化建议",
+    "analysisNotes": "分析笔记",
+    "contextUnderstanding": "上下文理解",
+    "answerAccuracy": "回答准确性",
+    "answerCompleteness": "回答完整性",
+    "clarity": "清晰度",
+    "citationQuality": "引用质量",
+    "analysisInfo": "分析信息",
+    "issueType": "问题类型：",
+    "rootCause": "根本原因：",
+    "analyst": "分析人员：",
+    "analysisTime": "分析时间：",
+    "noAnalysisData": "暂无分析数据",
+    "startAnalysisHint": "点击上方'编辑分析'按钮开始分析。",
+    "issueTypes": {
+      "good_example": "优秀案例",
+      "context_understanding": "上下文理解",
+      "answer_quality": "回答质量",
+      "retrieval_quality": "检索质量",
+      "response_format": "回答格式",
+      "other": "其他问题"
+    },
+    "placeholders": {
+      "rootCause": "分析问题的根本原因...",
+      "expectedAnswer": "描述理想情况下AI应该如何回答这个问题...",
+      "acceptanceCriteria": "描述该测试用例通过的标准...",
+      "optimizationSuggestions": "每行输入一条优化建议...",
+      "analysisNotes": "记录分析过程中的重要发现和思考..."
+    }
+  },
+  "roles": {
+    "user": "用户",
+    "assistant": "AI",
+    "system": "系统"
+  },
+  "languageToggle": {
+    "englishDisplay": "English",
+    "chineseDisplay": "中文",
+    "shortEn": "EN",
+    "shortZh": "中"
   }
 }

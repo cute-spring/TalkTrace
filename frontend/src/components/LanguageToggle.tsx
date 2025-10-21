@@ -79,11 +79,11 @@ const LanguageToggle: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }
   const getLanguageDisplay = () => {
     switch (currentLanguage) {
       case 'en':
-        return 'English'
+        return t('languageToggle.englishDisplay')
       case 'zh':
-        return '中文'
+        return t('languageToggle.chineseDisplay')
       default:
-        return 'English'
+        return t('languageToggle.englishDisplay')
     }
   }
 
@@ -110,7 +110,7 @@ const LanguageToggle: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }
               justifyContent: 'center'
             }}
           >
-            {currentLanguage === 'en' ? 'EN' : '中'}
+            {currentLanguage === 'en' ? t('languageToggle.shortEn') : t('languageToggle.shortZh')}
           </Button>
         </Dropdown>
       </div>
