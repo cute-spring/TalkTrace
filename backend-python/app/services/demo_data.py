@@ -42,6 +42,19 @@ MOCK_HISTORY_DATA = [
                 }
             },
         ],
+        "test_config": {
+            "model": {
+                "name": "gpt-4o-mini",
+                "params": {
+                    "temperature": 0.0,
+                    "max_tokens": 512
+                }
+            },
+            "prompts": {
+                "system": "You are a helpful assistant...",
+                "user_instruction": "Using the provided documents..."
+            }
+        }
     },
     {
         "session_id": "session_demo_002",
@@ -90,6 +103,19 @@ MOCK_HISTORY_DATA = [
                 }
             },
         ],
+        "test_config": {
+            "model": {
+                "name": "gpt-4o-mini",
+                "params": {
+                    "temperature": 0.1,
+                    "max_tokens": 600
+                }
+            },
+            "prompts": {
+                "system": "You are a helpful assistant specializing in React development. Provide clear, practical code examples.",
+                "user_instruction": "Using the provided documentation, answer the user's React question with working code examples."
+            }
+        }
     },
     {
         "session_id": "session_demo_004",
@@ -114,6 +140,19 @@ MOCK_HISTORY_DATA = [
                 }
             },
         ],
+        "test_config": {
+            "model": {
+                "name": "claude-3-sonnet",
+                "params": {
+                    "temperature": 0.2,
+                    "max_tokens": 768
+                }
+            },
+            "prompts": {
+                "system": "You are Claude, an AI assistant with deep knowledge of Python programming.",
+                "user_instruction": "Based on the documentation and context provided, give a detailed explanation."
+            }
+        }
     },
     {
         "session_id": "session_demo_005",

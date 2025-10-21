@@ -297,8 +297,25 @@ class ImportService:
                                          session_id=session_id,
                                          error=str(e))
 
-                    # 更新转换配置，设置正确的源会话ID
+                    # 获取会话的测试配置信息（如果可用）
+                    session_test_config = None
+                    try:
+                        # 尝试从历史服务的demo data获取test_config
+                        from app.services.demo_data import MOCK_HISTORY_DATA
+                        for session in MOCK_HISTORY_DATA:
+                            if session.get("session_id") == session_id:
+                                session_test_config = session.get("test_config")
+                                break
+                    except Exception as e:
+                        logger.debug("Could not get test config from demo data",
+                                   task_id=task_id,
+                                   session_id=session_id,
+                                   error=str(e))
+
+                    # 更新转换配置，设置正确的源会话ID和test_config
                     conversion_config["source_session"] = session_id
+                    if session_test_config:
+                        conversion_config["test_config"] = session_test_config
 
                     # 转换为测试用例
                     test_case_create = await data_conversion_service.convert_session_to_test_case(

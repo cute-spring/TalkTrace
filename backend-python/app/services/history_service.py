@@ -68,7 +68,8 @@ class HistoryService:
                         "user_rating": None,
                         "model_id": conv.model_id,
                         "created_at": conv.timestamp,
-                        "retrieval_chunks": []
+                        "retrieval_chunks": [],
+                        "test_config": None
                     }
 
                 session = session_dict[conv.session_id]
@@ -168,7 +169,8 @@ class HistoryService:
                 "user_rating": int(row["user_rating"]),
                 "model_id": row["model_id"],
                 "created_at": row["created_at"].isoformat() + "Z",
-                "retrieval_chunks": row["retrieval_chunks"]
+                "retrieval_chunks": row["retrieval_chunks"],
+                "test_config": row.get("test_config")
             })
 
         result = {

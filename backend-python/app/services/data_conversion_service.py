@@ -115,7 +115,7 @@ class DataConversionService:
         difficulty = default_config["default_difficulty"]
 
         # 测试配置
-        test_config = self._build_test_config(session_data, session_analysis)
+        test_config = self._build_test_config(session_data, session_analysis, config)
 
         # 输入数据
         test_input = self._build_test_input(session_data, retrieval_chunks_map, session_analysis)
@@ -335,33 +335,66 @@ class DataConversionService:
 
         return tags
 
-    def _build_test_config(self, session_data: List[ConversationRow], analysis: Dict[str, Any]) -> TestConfig:
+    def _build_test_config(self, session_data: List[ConversationRow], analysis: Dict[str, Any], config: Optional[Dict[str, Any]] = None) -> TestConfig:
         """构建测试配置"""
+        # 检查是否有从历史记录传入的test_config
+        session_test_config = None
+        if config and config.get("test_config"):
+            session_test_config = config["test_config"]
+
         # 获取主要模型配置
         primary_model = analysis.get("primary_model", "gpt-4o-mini")
 
-        model_config = ModelConfig(
-            name=primary_model,
-            version="latest",  # 默认版本
-            params={
-                "temperature": 0.0,  # 默认参数
-                "max_tokens": 512,
-                "top_p": 0.9
-            }
-        )
+        # 构建模型配置
+        if session_test_config and session_test_config.get("model"):
+            model_data = session_test_config["model"]
+            model_config = ModelConfig(
+                name=model_data.get("name", primary_model),
+                version=model_data.get("version", "latest"),
+                params=model_data.get("params", {
+                    "temperature": 0.0,
+                    "max_tokens": 512,
+                    "top_p": 0.9
+                })
+            )
+        else:
+            model_config = ModelConfig(
+                name=primary_model,
+                version="latest",
+                params={
+                    "temperature": 0.0,
+                    "max_tokens": 512,
+                    "top_p": 0.9
+                }
+            )
 
-        # 默认提示词配置
-        prompts_config = PromptsConfig(
-            system="你是一个有用的AI助手，请基于提供的文档信息回答用户的问题。",
-            user_instruction="使用提供的检索到的文档片段来回答用户的当前查询。请确保答案准确、相关且有帮助。"
-        )
+        # 构建提示词配置
+        if session_test_config and session_test_config.get("prompts"):
+            prompts_data = session_test_config["prompts"]
+            prompts_config = PromptsConfig(
+                system=prompts_data.get("system", "你是一个有用的AI助手，请基于提供的文档信息回答用户的问题。"),
+                user_instruction=prompts_data.get("user_instruction", "使用提供的检索到的文档片段来回答用户的当前查询。请确保答案准确、相关且有帮助。")
+            )
+        else:
+            prompts_config = PromptsConfig(
+                system="你是一个有用的AI助手，请基于提供的文档信息回答用户的问题。",
+                user_instruction="使用提供的检索到的文档片段来回答用户的当前查询。请确保答案准确、相关且有帮助。"
+            )
 
-        # 检索配置
-        retrieval_config = RetrievalConfig(
-            top_k=5,
-            similarity_threshold=0.7,
-            reranker_enabled=True
-        )
+        # 检索配置（如果有历史配置则使用，否则使用默认值）
+        if session_test_config and session_test_config.get("retrieval"):
+            retrieval_data = session_test_config["retrieval"]
+            retrieval_config = RetrievalConfig(
+                top_k=retrieval_data.get("top_k", 5),
+                similarity_threshold=retrieval_data.get("similarity_threshold", 0.7),
+                reranker_enabled=retrieval_data.get("reranker_enabled", True)
+            )
+        else:
+            retrieval_config = RetrievalConfig(
+                top_k=5,
+                similarity_threshold=0.7,
+                reranker_enabled=True
+            )
 
         return TestConfig(
             model=model_config,
