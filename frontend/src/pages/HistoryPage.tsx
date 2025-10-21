@@ -30,6 +30,20 @@ interface HistoryRecord {
   model_id: string
   created_at: string
   retrieval_chunks: any[]
+  test_config?: {
+    model: {
+      name: string
+      params?: {
+        temperature?: number
+        max_tokens?: number
+        [key: string]: any
+      }
+    }
+    prompts?: {
+      system: string
+      user_instruction: string
+    }
+  }
 }
 
 const HistoryPage: React.FC = () => {
@@ -238,6 +252,73 @@ const HistoryPage: React.FC = () => {
               })()}
             </Text>
           </div>
+
+          {/* Test Configuration Section */}
+          {record.test_config && (
+            <div style={{ marginTop: 24, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 6 }}>
+              <Title level={5} style={{ margin: '0 0 16px 0', color: '#1890ff' }}>
+                {t('history.modal.testConfig.title')}
+              </Title>
+
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <Card size="small" title={t('history.modal.testConfig.modelConfig')}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div>
+                        <Text strong>{t('history.modal.testConfig.modelName')}：</Text>
+                        <Text>{record.test_config.model?.name || record.model_id || 'N/A'}</Text>
+                      </div>
+                      {record.test_config.model?.params && (
+                        <div>
+                          <Text strong>{t('history.modal.testConfig.parameters')}：</Text>
+                          <pre style={{ fontSize: '12px', marginTop: 4, padding: 8, backgroundColor: '#fff', border: '1px solid #d9d9d9', borderRadius: 4 }}>
+                            {JSON.stringify(record.test_config.model.params, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </Space>
+                  </Card>
+                </Col>
+
+                <Col span={12}>
+                  <Card size="small" title={t('history.modal.testConfig.promptConfig')}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div>
+                        <Text strong>{t('history.modal.testConfig.systemPrompt')}：</Text>
+                        <div style={{
+                          marginTop: 4,
+                          padding: 8,
+                          backgroundColor: '#fff',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          maxHeight: 120,
+                          overflowY: 'auto',
+                          fontSize: '12px'
+                        }}>
+                          <Text code>{record.test_config.prompts?.system || 'N/A'}</Text>
+                        </div>
+                      </div>
+                      <div>
+                        <Text strong>{t('history.modal.testConfig.userInstruction')}：</Text>
+                        <div style={{
+                          marginTop: 4,
+                          padding: 8,
+                          backgroundColor: '#fff',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          maxHeight: 120,
+                          overflowY: 'auto',
+                          fontSize: '12px'
+                        }}>
+                          <Text code>{record.test_config.prompts?.user_instruction || 'N/A'}</Text>
+                        </div>
+                      </div>
+                    </Space>
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+          )}
         </div>
       ),
     })
@@ -282,7 +363,10 @@ const HistoryPage: React.FC = () => {
       dataIndex: 'model_id',
       key: 'model_id',
       width: 150,
-      render: (text) => <Tag>{text}</Tag>,
+      render: (text, record) => {
+        const modelName = record.test_config?.model?.name || text
+        return <Tag color="blue">{modelName}</Tag>
+      },
     },
     {
       title: t('history.columns.rating'),

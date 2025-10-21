@@ -56,7 +56,16 @@
       "rank": "Rank:",
       "userRating": "User Rating:",
       "createdAt": "Created At:",
-      "noChunks": "No retrieval chunks available"
+      "noChunks": "No retrieval chunks available",
+      "testConfig": {
+        "title": "Test Configuration",
+        "modelConfig": "Model Configuration",
+        "promptConfig": "Prompt Configuration",
+        "modelName": "Model Name",
+        "parameters": "Parameters",
+        "systemPrompt": "System Prompt",
+        "userInstruction": "User Instruction"
+      }
     },
     "selectedRecords": "Selected {{count}} records",
     "pagination": "Items {{start}}-{{end}} of {{total}}",
