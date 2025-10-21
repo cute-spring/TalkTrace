@@ -21,7 +21,7 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
-    debug: false,
+    debug: false, // Turn off debug mode for production
 
     interpolation: {
       escapeValue: false

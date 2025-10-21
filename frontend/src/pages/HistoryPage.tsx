@@ -35,6 +35,27 @@ interface HistoryRecord {
 const HistoryPage: React.FC = () => {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
+
+  // Helper function for robust translation with interpolation
+  const translateWithValues = (key: string, values: Record<string, number | string> = {}) => {
+    try {
+      const result = t(key, values)
+      // If the result still contains placeholders, do manual replacement
+      if (typeof result === 'string' && (result.includes('{{') || result.includes('{'))) {
+        let fallback = result
+        Object.entries(values).forEach(([placeholder, value]) => {
+          // Try both {{}} and {} syntax
+          fallback = fallback.replace(new RegExp(`{{${placeholder}}}`, 'g'), String(value))
+          fallback = fallback.replace(new RegExp(`{${placeholder}}}`, 'g'), String(value))
+        })
+        return fallback
+      }
+      return result
+    } catch (error) {
+      console.error(`Translation error for key "${key}":`, error)
+      return key // Return the key as fallback
+    }
+  }
   const [data, setData] = useState<any>(null)
   const [pagination, setPagination] = useState<any>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -396,7 +417,7 @@ const HistoryPage: React.FC = () => {
 
         {selectedRowKeys.length > 0 && (
           <div style={{ marginTop: 16, padding: 12, background: '#f6ffed', borderRadius: 4 }}>
-            <Text strong>已选择 {selectedRowKeys.length} 条记录</Text>
+            <Text strong>{translateWithValues('history.selectedRecords', { count: selectedRowKeys.length })}</Text>
             <Button
               type="primary"
               size="small"
@@ -406,7 +427,7 @@ const HistoryPage: React.FC = () => {
                 window.location.href = `/import?sessionIds=${selectedRowKeys.join(',')}`
               }}
             >
-              导入选中记录
+              {t('history.importSelected')}
             </Button>
           </div>
         )}
@@ -426,7 +447,7 @@ const HistoryPage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+              translateWithValues('history.pagination', { start: range[0], end: range[1], total: total }),
             onChange: (page, pageSize) => {
               setFilters(prev => ({ ...prev, page, pageSize: pageSize || 20 }))
             },

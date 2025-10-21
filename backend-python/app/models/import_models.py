@@ -34,6 +34,7 @@ class ImportRequest(BaseModel):
     default_priority: Optional[str] = Field(None, description="默认优先级", alias="defaultPriority")
     default_difficulty: Optional[str] = Field(None, description="默认难度", alias="defaultDifficulty")
     include_analysis: Optional[bool] = Field(False, description="是否包含分析数据", alias="includeAnalysis")
+    skip_duplicates: Optional[bool] = Field(True, description="是否跳过重复会话", alias="skipDuplicates")
 
     model_config = {"populate_by_name": True}
 
@@ -55,6 +56,7 @@ class ImportTask(BaseModel):
     total: int = 0
     processed: int = 0
     failed: int = 0
+    skipped: int = 0
     message: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
@@ -68,6 +70,7 @@ class ImportProgress(BaseModel):
     total: int
     processed: int
     failed: int
+    skipped: int = 0
     message: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None

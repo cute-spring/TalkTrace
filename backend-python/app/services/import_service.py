@@ -166,23 +166,6 @@ class ImportService:
         # 检查重复会话
         validation_result = await self.check_duplicate_sessions(request.session_ids)
 
-        # 如果没有有效会话，直接返回失败任务
-        if len(validation_result.valid_sessions) == 0:
-            task_id = f"IMPORT-{int(datetime.now().timestamp())}"
-            task = ImportTask(
-                task_id=task_id,
-                session_ids=request.session_ids,
-                status=ImportTaskStatus.FAILED,
-                total=len(request.session_ids),
-                processed=0,
-                failed=len(request.session_ids),
-                start_time=datetime.now(),
-                end_time=datetime.now(),
-                message="所有会话都已存在，无需重复导入"
-            )
-            self.tasks[task_id] = task
-            return task
-
         # 生成任务ID
         task_id = f"IMPORT-{int(datetime.now().timestamp())}"
 
@@ -192,17 +175,48 @@ class ImportService:
             "default_priority": request.default_priority,
             "default_difficulty": request.default_difficulty,
             "include_analysis": request.include_analysis,
+            "skip_duplicates": request.skip_duplicates if request.skip_duplicates is not None else True,
             "validation_result": validation_result
         }
 
-        # 创建导入任务（只处理有效会话）
+        # 根据skip_duplicates配置决定要处理的会话
+        skip_duplicates = config["skip_duplicates"]
+
+        if skip_duplicates:
+            # 跳过重复会话，只处理有效会话
+            session_ids_to_process = validation_result.valid_sessions
+            duplicate_count = validation_result.duplicate_count
+
+            # 如果没有有效会话，直接返回失败任务
+            if len(session_ids_to_process) == 0:
+                task = ImportTask(
+                    task_id=task_id,
+                    session_ids=request.session_ids,
+                    status=ImportTaskStatus.FAILED,
+                    total=len(request.session_ids),
+                    processed=0,
+                    failed=0,
+                    skipped=validation_result.duplicate_count,
+                    start_time=datetime.now(),
+                    end_time=datetime.now(),
+                    message="所有会话都已存在，跳过重复会话后无新会话可导入"
+                )
+                self.tasks[task_id] = task
+                return task
+        else:
+            # 不跳过重复会话，处理所有会话
+            session_ids_to_process = request.session_ids
+            duplicate_count = 0
+
+        # 创建导入任务
         task = ImportTask(
             task_id=task_id,
-            session_ids=validation_result.valid_sessions,
+            session_ids=session_ids_to_process,
             status=ImportTaskStatus.PENDING,
-            total=len(validation_result.valid_sessions),
+            total=len(request.session_ids),
             processed=0,
             failed=0,
+            skipped=duplicate_count,
             start_time=datetime.now(),
             config=config
         )
@@ -213,9 +227,11 @@ class ImportService:
         logger.info("Import task created",
                    task_id=task_id,
                    total_sessions=task.total,
+                   sessions_to_process=len(session_ids_to_process),
                    original_count=len(request.session_ids),
                    valid_count=len(validation_result.valid_sessions),
                    duplicate_count=validation_result.duplicate_count,
+                   skip_duplicates=skip_duplicates,
                    config=config)
 
         # 异步执行导入
@@ -314,12 +330,18 @@ class ImportService:
             task.status = ImportTaskStatus.COMPLETED
             task.end_time = datetime.now()
             success_rate = (task.processed / task.total) * 100 if task.total > 0 else 0
-            task.message = f"Import completed: {task.processed}/{task.total} sessions converted ({success_rate:.1f}% success rate)"
+
+            # 构建详细的消息
+            if task.skipped > 0:
+                task.message = f"导入完成: {task.processed} 个成功, {task.failed} 个失败, {task.skipped} 个跳过重复 (共 {task.total} 个会话)"
+            else:
+                task.message = f"导入完成: {task.processed}/{task.total} 个会话转换成功 ({success_rate:.1f}% 成功率)"
 
             logger.info("Import task completed",
                        task_id=task_id,
                        processed=task.processed,
                        failed=task.failed,
+                       skipped=task.skipped,
                        success_rate=f"{success_rate:.1f}%",
                        duration=task.end_time - task.start_time)
 
@@ -346,6 +368,7 @@ class ImportService:
             total=task.total,
             processed=task.processed,
             failed=task.failed,
+            skipped=task.skipped,
             message=task.message,
             start_time=task.start_time,
             end_time=task.end_time
@@ -354,6 +377,8 @@ class ImportService:
         logger.debug("Import progress retrieved",
                     task_id=task_id,
                     progress=task.processed,
+                    failed=task.failed,
+                    skipped=task.skipped,
                     total=task.total)
 
         return progress
@@ -391,6 +416,7 @@ class ImportService:
                 "total": task.total,
                 "processed": task.processed,
                 "failed": task.failed,
+                "skipped": task.skipped,
                 "message": task.message,
                 "start_time": task.start_time.isoformat() + "Z" if task.start_time else None,
                 "end_time": task.end_time.isoformat() + "Z" if task.end_time else None,
