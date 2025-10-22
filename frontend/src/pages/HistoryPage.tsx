@@ -392,7 +392,7 @@ const HistoryPage: React.FC = () => {
       title: t('history.columns.model'),
       dataIndex: 'model_id',
       key: 'model_id',
-      width: 150,
+      width: 220,
       render: (text, record) => {
         const modelName = record.test_config?.model?.name || text
         const sysVersion = record.test_config?.prompts?.system?.version
@@ -401,9 +401,9 @@ const HistoryPage: React.FC = () => {
 
         if (sysVersion && userRole && userVersion) {
           return (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <Tag color="blue">{modelName}</Tag>
-              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 Sys: {sysVersion}, {userRole}: {userVersion}
               </div>
             </div>
