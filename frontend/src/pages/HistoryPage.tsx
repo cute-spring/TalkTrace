@@ -13,6 +13,8 @@ import {
   message,
   Modal,
   Typography,
+  Row,
+  Col,
 } from 'antd'
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -40,8 +42,15 @@ interface HistoryRecord {
       }
     }
     prompts?: {
-      system: string
-      user_instruction: string
+      system: {
+        version: string
+        content: string
+      }
+      user_instruction: {
+        role: string
+        version: string
+        content: string
+      }
     }
   }
 }
@@ -285,6 +294,11 @@ const HistoryPage: React.FC = () => {
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <div>
                         <Text strong>{t('history.modal.testConfig.systemPrompt')}：</Text>
+                        {record.test_config?.prompts?.system?.version && (
+                          <Tag color="green" style={{ marginLeft: 8, fontSize: '11px' }}>
+                            {record.test_config.prompts.system.version}
+                          </Tag>
+                        )}
                         <div style={{
                           marginTop: 4,
                           padding: 8,
@@ -295,11 +309,24 @@ const HistoryPage: React.FC = () => {
                           overflowY: 'auto',
                           fontSize: '12px'
                         }}>
-                          <Text code>{record.test_config.prompts?.system || 'N/A'}</Text>
+                          <Text code>
+                            {record.test_config?.prompts?.system?.content ||
+                             record.test_config?.prompts?.system || 'N/A'}
+                          </Text>
                         </div>
                       </div>
                       <div>
                         <Text strong>{t('history.modal.testConfig.userInstruction')}：</Text>
+                        {record.test_config?.prompts?.user_instruction?.role && (
+                          <Tag color="orange" style={{ marginLeft: 8, fontSize: '11px' }}>
+                            {record.test_config.prompts.user_instruction.role}
+                          </Tag>
+                        )}
+                        {record.test_config?.prompts?.user_instruction?.version && (
+                          <Tag color="blue" style={{ marginLeft: 4, fontSize: '11px' }}>
+                            {record.test_config.prompts.user_instruction.version}
+                          </Tag>
+                        )}
                         <div style={{
                           marginTop: 4,
                           padding: 8,
@@ -310,7 +337,10 @@ const HistoryPage: React.FC = () => {
                           overflowY: 'auto',
                           fontSize: '12px'
                         }}>
-                          <Text code>{record.test_config.prompts?.user_instruction || 'N/A'}</Text>
+                          <Text code>
+                            {record.test_config?.prompts?.user_instruction?.content ||
+                             record.test_config?.prompts?.user_instruction || 'N/A'}
+                          </Text>
                         </div>
                       </div>
                     </Space>
@@ -365,6 +395,20 @@ const HistoryPage: React.FC = () => {
       width: 150,
       render: (text, record) => {
         const modelName = record.test_config?.model?.name || text
+        const sysVersion = record.test_config?.prompts?.system?.version
+        const userRole = record.test_config?.prompts?.user_instruction?.role
+        const userVersion = record.test_config?.prompts?.user_instruction?.version
+
+        if (sysVersion && userRole && userVersion) {
+          return (
+            <div>
+              <Tag color="blue">{modelName}</Tag>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                Sys: {sysVersion}, {userRole}: {userVersion}
+              </div>
+            </div>
+          )
+        }
         return <Tag color="blue">{modelName}</Tag>
       },
     },

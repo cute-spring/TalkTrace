@@ -51,8 +51,15 @@ MOCK_HISTORY_DATA = [
                 }
             },
             "prompts": {
-                "system": "You are a helpful assistant...",
-                "user_instruction": "Using the provided documents..."
+                "system": {
+                    "version": "v1.2.0",
+                    "content": "You are a helpful assistant specializing in financial advice. Always provide accurate, clear, and actionable information."
+                },
+                "user_instruction": {
+                    "role": "Financial Advisor",
+                    "version": "v1.1.0",
+                    "content": "Using the provided documents, answer the user's financial question comprehensively and cite your sources."
+                }
             }
         }
     },
@@ -79,6 +86,26 @@ MOCK_HISTORY_DATA = [
                 }
             },
         ],
+        "test_config": {
+            "model": {
+                "name": "gpt-4o",
+                "params": {
+                    "temperature": 0.1,
+                    "max_tokens": 700
+                }
+            },
+            "prompts": {
+                "system": {
+                    "version": "v1.8.0",
+                    "content": "You are an AI expert specializing in artificial intelligence concepts and applications. Provide clear, educational explanations."
+                },
+                "user_instruction": {
+                    "role": "AI Educator",
+                    "version": "v1.2.1",
+                    "content": "Explain AI concepts in simple terms with practical examples that help users understand the technology better."
+                }
+            }
+        }
     },
     {
         "session_id": "session_demo_003",
@@ -112,8 +139,15 @@ MOCK_HISTORY_DATA = [
                 }
             },
             "prompts": {
-                "system": "You are a helpful assistant specializing in React development. Provide clear, practical code examples.",
-                "user_instruction": "Using the provided documentation, answer the user's React question with working code examples."
+                "system": {
+                    "version": "v2.0.1",
+                    "content": "You are a helpful assistant specializing in React development. Provide clear, practical code examples and best practices."
+                },
+                "user_instruction": {
+                    "role": "React Developer",
+                    "version": "v1.3.2",
+                    "content": "Using the provided documentation, answer the user's React question with working code examples and explain the concepts clearly."
+                }
             }
         }
     },
@@ -149,8 +183,15 @@ MOCK_HISTORY_DATA = [
                 }
             },
             "prompts": {
-                "system": "You are Claude, an AI assistant with deep knowledge of Python programming.",
-                "user_instruction": "Based on the documentation and context provided, give a detailed explanation."
+                "system": {
+                    "version": "v1.5.2",
+                    "content": "You are Claude, an AI assistant with deep knowledge of Python programming and software architecture."
+                },
+                "user_instruction": {
+                    "role": "Python Instructor",
+                    "version": "v2.1.0",
+                    "content": "Based on the documentation and context provided, give a detailed explanation with code examples and best practices."
+                }
             }
         }
     },
@@ -177,6 +218,26 @@ MOCK_HISTORY_DATA = [
                 }
             },
         ],
+        "test_config": {
+            "model": {
+                "name": "gpt-4o",
+                "params": {
+                    "temperature": 0.3,
+                    "max_tokens": 800
+                }
+            },
+            "prompts": {
+                "system": {
+                    "version": "v2.1.0",
+                    "content": "You are an expert software architect specializing in distributed systems and microservices design."
+                },
+                "user_instruction": {
+                    "role": "System Architect",
+                    "version": "v1.4.1",
+                    "content": "Provide comprehensive explanations of architectural concepts with real-world examples and best practices."
+                }
+            }
+        }
     },
 ]
 
@@ -517,6 +578,150 @@ MOCK_TEST_CASES = [
 # 可用模型列表
 AVAILABLE_MODELS = ["gpt-4o-mini", "gpt-4o", "claude-3-sonnet"]
 
+# 主题特定的测试配置模板
+TOPIC_TEST_CONFIGS = {
+    "机器学习算法原理": {
+        "model": {"name": "gpt-4o", "params": {"temperature": 0.2, "max_tokens": 800}},
+        "prompts": {
+            "system": {
+                "version": "v1.5.0",
+                "content": "You are an expert machine learning engineer specializing in algorithms, neural networks, and AI systems design. Provide comprehensive, technically accurate explanations with practical examples."
+            },
+            "user_instruction": {
+                "role": "ML Engineer",
+                "version": "v1.3.0",
+                "content": "Explain machine learning concepts with clear technical depth, mathematical intuition, and real-world applications. Include algorithm types and use cases."
+            }
+        }
+    },
+    "数据库优化技巧": {
+        "model": {"name": "gpt-4o-mini", "params": {"temperature": 0.1, "max_tokens": 700}},
+        "prompts": {
+            "system": {
+                "version": "v1.8.0",
+                "content": "You are a senior database administrator with expertise in query optimization, indexing strategies, and performance tuning. Provide practical, actionable advice for database performance."
+            },
+            "user_instruction": {
+                "role": "Database Administrator",
+                "version": "v1.2.0",
+                "content": "Provide detailed database optimization techniques with specific examples, best practices, and measurable performance improvements. Focus on real-world scenarios."
+            }
+        }
+    },
+    "前端性能优化": {
+        "model": {"name": "gpt-4o", "params": {"temperature": 0.1, "max_tokens": 750}},
+        "prompts": {
+            "system": {
+                "version": "v2.0.1",
+                "content": "You are a frontend performance optimization expert specializing in modern web technologies, browser rendering, and user experience optimization."
+            },
+            "user_instruction": {
+                "role": "Performance Engineer",
+                "version": "v1.4.0",
+                "content": "Provide comprehensive frontend optimization strategies with code examples, performance metrics, and implementation guidelines. Focus on practical improvements."
+            }
+        }
+    },
+    "云计算服务比较": {
+        "model": {"name": "claude-3-sonnet", "params": {"temperature": 0.2, "max_tokens": 900}},
+        "prompts": {
+            "system": {
+                "version": "v1.7.0",
+                "content": "You are a cloud solutions architect with extensive experience across AWS, Azure, and Google Cloud platforms. Provide balanced, vendor-neutral comparisons and recommendations."
+            },
+            "user_instruction": {
+                "role": "Cloud Architect",
+                "version": "v1.3.5",
+                "content": "Provide detailed cloud service comparisons with specific use cases, cost considerations, and migration strategies. Include pros and cons of each platform."
+            }
+        }
+    },
+    "网络安全最佳实践": {
+        "model": {"name": "gpt-4o", "params": {"temperature": 0.0, "max_tokens": 800}},
+        "prompts": {
+            "system": {
+                "version": "v2.1.0",
+                "content": "You are a cybersecurity specialist with expertise in enterprise security, threat detection, and compliance frameworks. Provide authoritative, security-focused guidance."
+            },
+            "user_instruction": {
+                "role": "Security Specialist",
+                "version": "v1.6.0",
+                "content": "Provide comprehensive security best practices with specific implementation steps, risk assessments, and compliance considerations. Focus on practical defense strategies."
+            }
+        }
+    },
+    "移动开发框架选择": {
+        "model": {"name": "gpt-4o-mini", "params": {"temperature": 0.2, "max_tokens": 650}},
+        "prompts": {
+            "system": {
+                "version": "v1.4.0",
+                "content": "You are a mobile development expert with experience in React Native, Flutter, Swift, and Kotlin development. Provide framework recommendations based on project requirements."
+            },
+            "user_instruction": {
+                "role": "Mobile Developer",
+                "version": "v1.2.5",
+                "content": "Provide detailed mobile framework comparisons with performance benchmarks, development considerations, and platform-specific recommendations. Include real project examples."
+            }
+        }
+    },
+    "API设计原则": {
+        "model": {"name": "gpt-4o", "params": {"temperature": 0.1, "max_tokens": 700}},
+        "prompts": {
+            "system": {
+                "version": "v1.9.0",
+                "content": "You are an API architect specializing in RESTful design, GraphQL, and enterprise API governance. Provide clear, standards-compliant API design guidance."
+            },
+            "user_instruction": {
+                "role": "API Architect",
+                "version": "v1.4.2",
+                "content": "Provide comprehensive API design principles with specific examples, versioning strategies, and best practices for scalable, maintainable APIs."
+            }
+        }
+    },
+    "代码重构方法": {
+        "model": {"name": "claude-3-sonnet", "params": {"temperature": 0.15, "max_tokens": 750}},
+        "prompts": {
+            "system": {
+                "version": "v1.6.0",
+                "content": "You are a senior software engineer specializing in code quality, design patterns, and refactoring techniques. Provide practical guidance for improving code maintainability."
+            },
+            "user_instruction": {
+                "role": "Senior Engineer",
+                "version": "v1.3.0",
+                "content": "Provide detailed refactoring methods with before/after code examples, design pattern applications, and testing strategies. Focus on safe, incremental improvements."
+            }
+        }
+    },
+    "项目管理工具": {
+        "model": {"name": "gpt-4o-mini", "params": {"temperature": 0.2, "max_tokens": 600}},
+        "prompts": {
+            "system": {
+                "version": "v1.3.0",
+                "content": "You are a project management expert with experience in agile methodologies, team collaboration, and tool selection. Provide practical advice for project workflow optimization."
+            },
+            "user_instruction": {
+                "role": "Project Manager",
+                "version": "v1.1.5",
+                "content": "Provide comprehensive project management tool comparisons with team size considerations, workflow integration, and implementation best practices."
+            }
+        }
+    },
+    "DevOps实践指南": {
+        "model": {"name": "claude-3-sonnet", "params": {"temperature": 0.1, "max_tokens": 850}},
+        "prompts": {
+            "system": {
+                "version": "v2.0.0",
+                "content": "You are a DevOps engineer with expertise in CI/CD pipelines, infrastructure as code, and DevOps culture transformation. Provide comprehensive implementation guidance."
+            },
+            "user_instruction": {
+                "role": "DevOps Engineer",
+                "version": "v1.5.0",
+                "content": "Provide detailed DevOps implementation guides with specific tool recommendations, pipeline configurations, and organizational change strategies. Focus on practical adoption."
+            }
+        }
+    }
+}
+
 # 主题映射到完整的检索片段信息
 TOPIC_MAPPINGS = {
     "机器学习算法原理": {
@@ -613,14 +818,21 @@ def generate_more_history_data(count: int = 20) -> List[Dict[str, Any]]:
         topic = random.choice(topics)
         model = random.choice(models)
         topic_info = TOPIC_MAPPINGS[topic]
+        test_config = TOPIC_TEST_CONFIGS[topic]
         confidence = round(random.uniform(0.80, 0.96), 2)
+
+        # Add some variation to model parameters for realism
+        model_config = test_config["model"].copy()
+        model_config["params"] = model_config["params"].copy()
+        model_config["params"]["temperature"] = round(model_config["params"]["temperature"] + random.uniform(-0.05, 0.05), 2)
+        model_config["params"]["max_tokens"] = model_config["params"]["max_tokens"] + random.randint(-100, 100)
 
         data.append({
             "session_id": f"session_gen_{i+1:04d}",
             "user_query": f"请详细解释{topic}",
             "ai_response": f"关于{topic}，这是一个很好的问题。让我为您详细解释...",
             "user_rating": random.randint(1, 5),
-            "model_id": model,
+            "model_id": model_config["name"],
             "created_at": session_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "retrieval_chunks": [
                 {
@@ -638,6 +850,10 @@ def generate_more_history_data(count: int = 20) -> List[Dict[str, Any]]:
                     }
                 },
             ],
+            "test_config": {
+                "model": model_config,
+                "prompts": test_config["prompts"]
+            }
         })
 
     return data
