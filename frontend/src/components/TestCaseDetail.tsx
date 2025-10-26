@@ -22,6 +22,7 @@ import {
   Badge,
   message,
   Select,
+  Spin,
 } from 'antd'
 import {
   EditOutlined,
@@ -174,9 +175,16 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
     setLoading(true)
     try {
       const response = await testCaseService.getById(testCaseId)
-      setTestCase(response.data.test_case)
+      const payload = response?.data?.data
+      // Prefer { test_case } wrapper; fallback to direct payload
+      const fetched = payload?.test_case ?? payload
+      if (!fetched) {
+        throw new Error('Empty test case payload')
+      }
+      setTestCase(fetched as TestCaseDetail)
     } catch (error) {
       console.error('Failed to load test case detail:', error)
+      message.error(t('common.error'))
     } finally {
       setLoading(false)
     }
@@ -199,7 +207,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
 
       // 处理优化建议（将换行分隔的文本转换为数组）
       const optimizationSuggestions = values.optimization_suggestions
-        ? values.optimization_suggestions.split('\n').filter(s => s.trim())
+        ? values.optimization_suggestions.split('\n').filter((s: string) => s.trim())
         : []
 
       // 构建分析数据
@@ -240,7 +248,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       rejected: { color: 'error', text: '已拒绝' },
     }
 
-    const config = statusConfig[status] || statusConfig.draft
+    const config = (statusConfig as Record<string, { color: string; text: string }>)[status] || statusConfig.draft
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
@@ -251,7 +259,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       high: { color: 'red', text: '高' },
     }
 
-    const config = priorityConfig[priority] || priorityConfig.medium
+    const config = (priorityConfig as Record<string, { color: string; text: string }>)[priority] || priorityConfig.medium
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
@@ -345,7 +353,29 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
     },
   ]
 
-  if (!testCase) return null
+  if (!testCase) {
+    return (
+      <Modal
+        title={t('testCaseDetail.modal.title')}
+        open={visible}
+        onCancel={onClose}
+        width={1200}
+        footer={[
+          <Button key="close" onClick={onClose}>
+            {t('testCaseDetail.modal.close')}
+          </Button>,
+        ]}
+      >
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <Spin />
+          </div>
+        ) : (
+          <Alert type="warning" message={t('common.error') || '无法加载测试用例详情'} />
+        )}
+      </Modal>
+    )
+  }
 
   return (
     <Modal
@@ -837,7 +867,7 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                             <div key={key}>
                               <Text>
                                 {key === 'context_understanding' && '上下文理解'}
-                                {key === 'answer_accuracy' && '回答准确性'}
+                                {key === 'answer_accuracy' && '回答准确度'}
                                 {key === 'answer_completeness' && '回答完整性'}
                                 {key === 'clarity' && '清晰度'}
                                 {key === 'citation_quality' && '引用质量'}
