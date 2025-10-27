@@ -56,7 +56,16 @@
       "rank": "排序：",
       "userRating": "用户评分：",
       "createdAt": "创建时间：",
-      "noChunks": "暂无检索片段信息"
+      "noChunks": "暂无检索片段信息",
+      "testConfig": {
+        "title": "测试配置",
+        "modelConfig": "模型配置",
+        "promptConfig": "提示词配置",
+        "modelName": "模型名称",
+        "parameters": "参数",
+        "systemPrompt": "系统提示词",
+        "userInstruction": "用户指令"
+      }
     },
     "selectedRecords": "已选择 {{count}} 条记录",
     "pagination": "第 {{start}}-{{end}} 条，共 {{total}} 条",

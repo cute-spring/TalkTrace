@@ -41,3 +41,4 @@ class SessionDetail(BaseModel):
     created_at: datetime
     retrieval_chunks: List[RetrievalChunk]
     user_feedback: Optional[str] = None
+    test_config: Optional[Dict[str, Any]] = None

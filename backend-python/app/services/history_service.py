@@ -68,7 +68,8 @@ class HistoryService:
                         "user_rating": None,
                         "model_id": conv.model_id,
                         "created_at": conv.timestamp,
-                        "retrieval_chunks": []
+                        "retrieval_chunks": [],
+                        "test_config": None
                     }
 
                 session = session_dict[conv.session_id]
@@ -101,6 +102,25 @@ class HistoryService:
                 "total_pages": (total + request.page_size - 1) // request.page_size
             }
 
+            # Ensure all data is JSON serializable
+            try:
+                import json
+                json.dumps(result)  # Test serialization
+            except (ValueError, TypeError) as e:
+                logger.warning("JSON serialization issue in BigQuery search result", error=str(e))
+                # Fix any datetime objects that weren't converted properly
+                for item in items:
+                    if isinstance(item.get("created_at"), str):
+                        try:
+                            # Ensure datetime is in ISO format
+                            from datetime import datetime
+                            dt = datetime.fromisoformat(item["created_at"].replace('Z', '+00:00'))
+                            item["created_at"] = dt.isoformat().replace('+00:00', 'Z')
+                        except:
+                            pass
+            else:
+                logger.debug("BigQuery search result is JSON serializable", items_count=len(items))
+
             logger.info("History search completed via BigQuery",
                        total_results=total,
                        page=request.page,
@@ -121,11 +141,13 @@ class HistoryService:
         # 复制DataFrame进行过滤
         filtered_df = self.df.copy()
 
-        # 时间范围过滤
-        start_dt = pd.to_datetime(request.start_time)
-        end_dt = pd.to_datetime(request.end_time)
+        # 时间范围过滤 - 确保时间格式一致
+        start_dt = pd.to_datetime(request.start_time).tz_localize(None)
+        end_dt = pd.to_datetime(request.end_time).tz_localize(None)
 
-        mask = (filtered_df['created_at'] >= start_dt) & (filtered_df['created_at'] <= end_dt)
+        # 确保DataFrame中的时间戳也是naive格式（移除时区信息以进行比较）
+        df_times = filtered_df['created_at'].dt.tz_localize(None)
+        mask = (df_times >= start_dt) & (df_times <= end_dt)
         filtered_df = filtered_df[mask]
 
         # 模型过滤
@@ -168,7 +190,8 @@ class HistoryService:
                 "user_rating": int(row["user_rating"]),
                 "model_id": row["model_id"],
                 "created_at": row["created_at"].isoformat() + "Z",
-                "retrieval_chunks": row["retrieval_chunks"]
+                "retrieval_chunks": row["retrieval_chunks"],
+                "test_config": row.get("test_config")
             })
 
         result = {
@@ -178,6 +201,25 @@ class HistoryService:
             "page_size": request.page_size,
             "total_pages": (total + request.page_size - 1) // request.page_size
         }
+
+        # Ensure all data is JSON serializable
+        try:
+            import json
+            json.dumps(result)  # Test serialization
+        except (ValueError, TypeError) as e:
+            logger.warning("JSON serialization issue in search result", error=str(e))
+            # Fix any datetime objects that weren't converted properly
+            for item in items:
+                if isinstance(item.get("created_at"), str):
+                    try:
+                        # Ensure datetime is in ISO format
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(item["created_at"].replace('Z', '+00:00'))
+                        item["created_at"] = dt.isoformat().replace('+00:00', 'Z')
+                    except:
+                        pass
+        else:
+            logger.debug("Search result is JSON serializable", items_count=len(items))
 
         logger.info("Demo data search completed",
                    total_results=total,
@@ -223,7 +265,8 @@ class HistoryService:
                         ai_response="",
                         created_at=conv.timestamp,
                         retrieval_chunks=retrieval_chunks,
-                        user_feedback=None
+                        user_feedback=None,
+                        test_config=None  # BigQuery暂不支持test_config
                     )
                     details.append(detail)
 
@@ -259,7 +302,8 @@ class HistoryService:
                 ai_response=row["ai_response"],
                 created_at=row["created_at"],
                 retrieval_chunks=row["retrieval_chunks"],
-                user_feedback=None  # 演示数据中没有user_feedback
+                user_feedback=None,  # 演示数据中没有user_feedback
+                test_config=row.get("test_config")  # 添加test_config字段
             )
             details.append(detail)
 

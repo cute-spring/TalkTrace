@@ -2,6 +2,8 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import List, Optional
 from datetime import datetime
+import json
+import math
 
 from app.services.history_service import HistoryService
 from app.models.history import HistorySearchRequest, SessionDetail
@@ -10,6 +12,29 @@ from app.utils.logger import logger
 
 router = APIRouter()
 history_service = HistoryService()
+
+def clean_data_for_json_serialization(data):
+    """清理数据以确保JSON序列化成功"""
+    if isinstance(data, dict):
+        cleaned = {}
+        for key, value in data.items():
+            cleaned[key] = clean_data_for_json_serialization(value)
+        return cleaned
+    elif isinstance(data, list):
+        return [clean_data_for_json_serialization(item) for item in data]
+    elif isinstance(data, float):
+        # 处理无效的float值
+        if math.isnan(data):
+            return None
+        elif math.isinf(data):
+            return None
+        else:
+            return data
+    elif hasattr(data, '__dict__'):
+        # 处理Pydantic模型或其他对象
+        return clean_data_for_json_serialization(data.__dict__)
+    else:
+        return data
 
 @router.get("/search", response_model=ApiResponse[dict])
 async def search_history(
@@ -58,7 +83,10 @@ async def search_history(
                    page_size=pageSize,
                    results_count=len(result["items"]))
 
-        return ApiResponse(success=True, data=result)
+        # 清理数据以确保JSON序列化成功
+        cleaned_result = clean_data_for_json_serialization(result)
+
+        return ApiResponse(success=True, data=cleaned_result)
 
     except ValueError as e:
         logger.error("Invalid datetime format", error=str(e))
