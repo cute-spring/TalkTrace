@@ -1,7 +1,10 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+// Prefer backend on 8001 during development to avoid env mismatches
+const API_BASE_URL = import.meta.env.DEV
+  ? 'http://localhost:8001/api'
+  : (import.meta.env.VITE_API_URL || '/api')
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
