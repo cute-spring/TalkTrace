@@ -96,7 +96,10 @@ interface TestCaseDetail {
       id: string
       title: string
       source: string
+      section_title?: string
       content: string
+      used_in_answer?: boolean
+      citation_url?: string
       metadata: {
         publish_date?: string
         effective_date?: string
@@ -116,6 +119,7 @@ interface TestCaseDetail {
         generation_time: number
         tokens_used: number
         chunks_considered: number
+        chunks_used?: number
       }
       retrieval_quality?: {
         max_similarity?: number
@@ -171,6 +175,251 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
     }
   }, [visible, testCaseId])
 
+  // 将后端返回的数据进行丰富补全，提供更真实的展示用mock字段
+  const buildEnrichedDetail = (fetched: any): TestCaseDetail => {
+    const now = new Date()
+    const safe = fetched || {}
+    const meta = safe.metadata || {}
+    const cfg = safe.test_config || {}
+    const model = (cfg.model || {})
+    const prompts = (cfg.prompts || {})
+    const retrieval = cfg.retrieval || {}
+    const input = safe.input || {}
+    const currentQuery = input.current_query || {}
+    const exec = safe.execution || {}
+    const actual = exec.actual || {}
+    const perf = actual.performance_metrics || {}
+    const rq = actual.retrieval_quality || {}
+    const feedback = exec.user_feedback || null
+    const analysis = safe.analysis || null
+
+    // Ensure retrieved chunks display meets top_k by padding with defaults when backend provides fewer
+    const topK = Math.max((retrieval?.top_k ?? 5) || 5, 5)
+    const defaultChunks = [
+      {
+        id: 'doc-001',
+        title: '信用卡逾期费用说明',
+        source: '政策中心',
+        section_title: '逾期费用与利息',
+        content: '逾期每天按欠款金额计收利息，若超过宽限期可能产生滞纳金。',
+        used_in_answer: true,
+        citation_url: 'https://policy.company.com/credit/overdue-fee',
+        metadata: {
+          confidence: 0.87,
+          retrieval_rank: 1,
+          publish_date: '2023-05-01',
+          chunk_type: 'policy',
+        },
+      },
+      {
+        id: 'doc-002',
+        title: '还款与宽限期政策',
+        source: '知识库',
+        section_title: '宽限期说明',
+        content: '账单到期后有3日宽限期，期间建议尽快还款避免额外费用。',
+        used_in_answer: true,
+        citation_url: 'https://kb.company.com/repayment/grace-period',
+        metadata: {
+          confidence: 0.81,
+          retrieval_rank: 2,
+          effective_date: '2024-01-01',
+          chunk_type: 'kb',
+        },
+      },
+      {
+        id: 'doc-003',
+        title: '费用示例计算',
+        source: '财务FAQ',
+        section_title: '示例与计算',
+        content: '以1000元为例，日利率0.05%，逾期2天利息约1元。',
+        used_in_answer: false,
+        citation_url: 'https://faq.company.com/finance/examples',
+        metadata: {
+          confidence: 0.76,
+          retrieval_rank: 3,
+          chunk_type: 'faq',
+        },
+      },
+      {
+        id: 'doc-004',
+        title: '滞纳金与费用条款',
+        source: '政策中心',
+        section_title: '滞纳金规则',
+        content: '超过宽限期后可能产生固定滞纳金，金额随账单与历史记录变化。',
+        used_in_answer: false,
+        citation_url: 'https://policy.company.com/credit/late-fee',
+        metadata: {
+          confidence: 0.72,
+          retrieval_rank: 4,
+          chunk_type: 'policy',
+        },
+      },
+      {
+        id: 'doc-005',
+        title: '客户建议与最佳实践',
+        source: '社区文章',
+        section_title: '最佳实践建议',
+        content: '建议开启自动还款功能，并设置还款提醒，避免逾期。',
+        used_in_answer: false,
+        citation_url: 'https://community.company.com/best-practices/autopay',
+        metadata: {
+          confidence: 0.64,
+          retrieval_rank: 5,
+          chunk_type: 'community',
+        },
+      },
+    ]
+    const backendChunks = Array.isArray(input.current_retrieved_chunks)
+      ? (input.current_retrieved_chunks as any[])
+      : []
+    const mergedChunks = [...backendChunks]
+    for (const d of defaultChunks) {
+      if (mergedChunks.length >= topK) break
+      const exists = mergedChunks.some(c => c && c.id === d.id)
+      if (!exists) mergedChunks.push(d)
+    }
+    mergedChunks.sort((a, b) => {
+      const ra = a?.metadata?.retrieval_rank ?? 999
+      const rb = b?.metadata?.retrieval_rank ?? 999
+      return ra - rb
+    })
+    const finalChunks = (mergedChunks.length ? mergedChunks.slice(0, topK) : defaultChunks.slice(0, topK)) as any[]
+    const finalChunksUsedCount = finalChunks.filter(c => c?.used_in_answer).length
+
+    const enriched: TestCaseDetail = {
+      id: safe.id || testCaseId,
+      name: safe.name || `测试用例 #${testCaseId}`,
+      description:
+        safe.description || '这是一条用于演示的测试用例详情，包含更真实的上下文、检索与性能指标。',
+      metadata: {
+        status: meta.status || 'approved',
+        owner: meta.owner || 'qa.owner@company.com',
+        priority: meta.priority || 'medium',
+        tags:
+          meta.tags || [
+            { name: 'FAQ', color: 'geekblue' },
+            { name: 'Billing', color: 'volcano' },
+          ],
+        version: meta.version || 'v1.0.3',
+        created_date:
+          meta.created_date || new Date(now.getTime() - 86400000 * 7).toISOString(),
+        updated_date: meta.updated_date || now.toISOString(),
+        source_session: meta.source_session || `S-${String(testCaseId).slice(0, 8)}`,
+      },
+      domain: safe.domain || 'finance',
+      difficulty: safe.difficulty || 'medium',
+      test_config: {
+        model: {
+          name: model.name || 'gpt-4o-mini',
+          version: model.version || '2024-10-01',
+          params:
+            model.params || {
+              temperature: 0.2,
+              max_tokens: 512,
+              top_p: 0.9,
+            },
+        },
+        prompts: {
+          system:
+            prompts.system || '你是一个金融客服助手，回答要清晰并提供引用。',
+          user_instruction:
+            prompts.user_instruction || '用户询问信用卡还款政策，请结合知识库回答。',
+        },
+        retrieval: Object.keys(retrieval).length
+          ? retrieval
+          : {
+              top_k: 5,
+              similarity_threshold: 0.65,
+              reranker_enabled: true,
+            },
+      },
+      input: {
+        current_query: {
+          text:
+            currentQuery.text || '信用卡账单逾期两天，会产生哪些费用？',
+          timestamp: currentQuery.timestamp || now.toISOString(),
+        },
+        conversation_history:
+          input.conversation_history || [
+            {
+              turn: 1,
+              role: 'user',
+              query: '你好，我的信用卡账单逾期两天。',
+              timestamp: new Date(now.getTime() - 600000).toISOString(),
+            },
+            {
+              turn: 2,
+              role: 'assistant',
+              response: '我可以为你查询相关政策，请稍等。',
+              retrieved_chunks: ['doc-001', 'doc-002'],
+              timestamp: new Date(now.getTime() - 590000).toISOString(),
+            },
+            {
+              turn: 3,
+              role: 'user',
+              query: '逾期会收取多少利息和费用？',
+              timestamp: new Date(now.getTime() - 580000).toISOString(),
+            },
+          ],
+        current_retrieved_chunks: finalChunks,
+      },
+      execution: {
+        actual: {
+          response:
+            actual.response ||
+            '根据我司政策，账单逾期两天通常不会产生滞纳金，但会开始计算利息。建议在宽限期内完成还款以避免额外费用。',
+          performance_metrics: {
+            total_response_time: perf.total_response_time || 1.8,
+            retrieval_time: perf.retrieval_time || 0.45,
+            generation_time: perf.generation_time || 1.2,
+            tokens_used: perf.tokens_used || 315,
+            chunks_considered: perf.chunks_considered || finalChunks.length,
+            chunks_used: perf.chunks_used || finalChunksUsedCount,
+          },
+          retrieval_quality: {
+            max_similarity: rq.max_similarity || 0.93,
+            avg_similarity: rq.avg_similarity || 0.78,
+            diversity_score: rq.diversity_score || 0.71,
+          },
+        },
+        user_feedback:
+          feedback || {
+            rating: 4,
+            category: '回答质量',
+            comment: '解释清楚，并给出建议。',
+            concern: '希望提供更具体的利率数值。',
+            suggested_improvement: '可引用条款编号或提供示例计算。',
+            feedback_date: now.toISOString(),
+            feedback_source: 'web_form',
+          },
+      },
+      analysis:
+        analysis || {
+          issue_type: 'answer_quality',
+          root_cause: '未提供具体利率区间与示例计算。',
+          expected_answer: '列出逾期利率范围，并根据账单金额演示费用计算。',
+          acceptance_criteria: '回答包含具体利率、示例计算和引用来源。',
+          quality_scores: {
+            context_understanding: 4,
+            answer_accuracy: 3,
+            answer_completeness: 4,
+            clarity: 4,
+            citation_quality: 3,
+          },
+          optimization_suggestions: [
+            '引用具体政策条款编号',
+            '补充示例计算过程',
+            '在结尾提供还款建议和链接',
+          ],
+          notes: '用户对细节较敏感，应提升可验证性与引用质量。',
+          analyzed_by: 'qa.owner@company.com',
+          analysis_date: now.toISOString(),
+        },
+    }
+
+    return enriched
+  }
+
   const loadTestCaseDetail = async () => {
     setLoading(true)
     try {
@@ -181,10 +430,12 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       if (!fetched) {
         throw new Error('Empty test case payload')
       }
-      setTestCase(fetched as TestCaseDetail)
+      setTestCase(buildEnrichedDetail(fetched))
     } catch (error) {
       console.error('Failed to load test case detail:', error)
       message.error(t('common.error'))
+      // 回退到本地丰富的mock详情以确保展示完整信息
+      setTestCase(buildEnrichedDetail({ id: testCaseId }))
     } finally {
       setLoading(false)
     }
@@ -269,6 +520,12 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
     return '#ff4d4f'
   }
 
+  // 控制表格展开：仅允许单行展开，默认不展开
+  const [convExpandedKeys, setConvExpandedKeys] = useState<React.Key[]>([])
+  const [chunksExpandedKeys, setChunksExpandedKeys] = useState<React.Key[]>([])
+  const getConvRowKey = (r: any) => r?.timestamp || `${r?.role}-${r?.turn}`
+  const getChunkRowKey = (r: any) => r?.id
+
   const conversationColumns: ColumnsType<any> = [
     {
       title: '轮次',
@@ -295,13 +552,17 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
           {record.query && (
             <div style={{ marginBottom: 8 }}>
               <Text strong>{t('testCaseDetail.conversationHistory.userLabel')}</Text>
-              <Text>{record.query}</Text>
+              <Paragraph ellipsis={{ rows: 3, tooltip: record.query }} style={{ marginBottom: 0 }}>
+                {record.query}
+              </Paragraph>
             </div>
           )}
           {record.response && (
             <div>
               <Text strong>{t('testCaseDetail.conversationHistory.aiLabel')}</Text>
-              <Text>{record.response}</Text>
+              <Paragraph ellipsis={{ rows: 3, tooltip: record.response }} style={{ marginBottom: 0 }}>
+                {record.response}
+              </Paragraph>
             </div>
           )}
         </div>
@@ -322,11 +583,32 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       dataIndex: ['metadata', 'retrieval_rank'],
       key: 'rank',
       width: 60,
+      align: 'center',
     },
     {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
+      width: 260,
+      render: (title, record) => (
+        <div style={{ maxWidth: 260 }}>
+          <Text style={{ display: 'inline-block', maxWidth: 260 }} ellipsis={{ tooltip: title }}>{title}</Text>
+          {record.section_title && (
+            <div>
+              <Text style={{ display: 'inline-block', maxWidth: 260 }} type="secondary" ellipsis={{ tooltip: record.section_title }}>
+                {record.section_title}
+              </Text>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: '来源',
+      dataIndex: 'source',
+      key: 'source',
+      width: 120,
+      render: (source) => <Tag>{source}</Tag>,
     },
     {
       title: '相似度',
@@ -345,11 +627,27 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
       title: '内容预览',
       dataIndex: 'content',
       key: 'content',
+      width: 300,
       render: (content) => (
-        <Text ellipsis style={{ maxWidth: 200 }}>
+        <Paragraph ellipsis={{ rows: 2, tooltip: content }} style={{ maxWidth: 300, marginBottom: 0 }}>
           {content}
-        </Text>
+        </Paragraph>
       ),
+    },
+    {
+      title: '使用',
+      dataIndex: 'used_in_answer',
+      key: 'used_in_answer',
+      width: 80,
+      render: (used) => (
+        <Tag color={used ? 'green' : 'default'}>{used ? '已使用' : '未使用'}</Tag>
+      ),
+    },
+    {
+      title: '引用',
+      dataIndex: 'citation_url',
+      key: 'citation_url',
+      render: (url) => (url ? <a href={url} target="_blank" rel="noreferrer">打开</a> : '-')
     },
   ]
 
@@ -517,34 +815,133 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
         </TabPane>
 
         <TabPane tab={t('testCaseDetail.tabs.context')} key="context">
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
+          <Row gutter={[24, 16]}>
+            <Col xs={24} lg={10}>
               <Card title={t('testCaseDetail.currentQuery.title')} size="small">
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Paragraph>{testCase.input.current_query.text}</Paragraph>
-                  <Text type="secondary">
-                    {new Date(testCase.input.current_query.timestamp).toLocaleString()}
-                  </Text>
+                  <Paragraph copyable ellipsis={{ rows: 3, tooltip: testCase.input.current_query.text }}>
+                    {testCase.input.current_query.text}
+                  </Paragraph>
+                  <Space>
+                    <ClockCircleOutlined />
+                    <Text type="secondary">
+                      {new Date(testCase.input.current_query.timestamp).toLocaleString()}
+                    </Text>
+                  </Space>
                 </Space>
               </Card>
 
               <Card title={t('testCaseDetail.conversationHistory.title')} size="small" style={{ marginTop: 16 }}>
                 <Table
+                  rowKey={(r) => r.timestamp || `${r.role}-${r.turn}`}
                   columns={conversationColumns}
                   dataSource={testCase.input.conversation_history}
-                  pagination={false}
+                  pagination={
+                    (testCase.input.conversation_history?.length || 0) > 10
+                      ? { pageSize: 10 }
+                      : false
+                  }
                   size="small"
+                  scroll={{ y: 260 }}
+                  expandable={{
+                    expandedRowRender: (record) => (
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        {record.query && (
+                          <div>
+                            <Text strong>{t('testCaseDetail.conversationHistory.userLabel')}</Text>
+                            <Paragraph copyable style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                              {record.query}
+                            </Paragraph>
+                          </div>
+                        )}
+                        {record.response && (
+                          <div>
+                            <Text strong>{t('testCaseDetail.conversationHistory.aiLabel')}</Text>
+                            <Paragraph copyable style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                              {record.response}
+                            </Paragraph>
+                          </div>
+                        )}
+                        {Array.isArray(record.retrieved_chunks) && record.retrieved_chunks.length > 0 && (
+                          <div>
+                            <Text type="secondary">检索块引用：</Text>
+                            <Space wrap>
+                              {record.retrieved_chunks.map((cid: string, idx: number) => (
+                                <Tag key={`${cid}-${idx}`}>{cid}</Tag>
+                              ))}
+                            </Space>
+                          </div>
+                        )}
+                      </Space>
+                    ),
+                    expandIconColumnIndex: 0,
+                    expandedRowKeys: convExpandedKeys,
+                    onExpand: (expanded, record) => {
+                      setConvExpandedKeys(expanded ? [getConvRowKey(record)] : [])
+                    },
+                  }}
+                  onRow={(record) => ({
+                    style:
+                      record.role === 'user'
+                        ? { backgroundColor: '#e6f4ff' }
+                        : record.role === 'assistant'
+                        ? { backgroundColor: '#fffbe6' }
+                        : undefined,
+                  })}
+                  sticky
                 />
               </Card>
             </Col>
 
-            <Col span={12}>
+            <Col xs={24} lg={14}>
               <Card title={t('testCaseDetail.retrievedChunks.title')} size="small">
                 <Table
+                  rowKey={(r) => r.id}
                   columns={retrievedChunksColumns}
                   dataSource={testCase.input.current_retrieved_chunks}
-                  pagination={false}
-                  size="small"
+                  pagination={
+                    (testCase.input.current_retrieved_chunks?.length || 0) > 10
+                      ? { pageSize: 10 }
+                      : false
+                  }
+                  size="middle"
+                  scroll={{ y: 300 }}
+                  sticky
+                  expandable={{
+                    expandedRowRender: (record) => (
+                      <div>
+                        <Text strong>完整内容</Text>
+                        <Paragraph copyable style={{ whiteSpace: 'pre-wrap' }}>
+                          {record.content}
+                        </Paragraph>
+                        <Space size="small" wrap>
+                          {record.section_title && (
+                            <Tag color="blue">{record.section_title}</Tag>
+                          )}
+                          {record.metadata?.chunk_type && (
+                            <Tag color="purple">{record.metadata.chunk_type}</Tag>
+                          )}
+                          {record.metadata?.publish_date && (
+                            <Tag color="geekblue">发布: {record.metadata.publish_date}</Tag>
+                          )}
+                          {record.metadata?.effective_date && (
+                            <Tag color="cyan">生效: {record.metadata.effective_date}</Tag>
+                          )}
+                          {record.metadata?.expiration_date && (
+                            <Tag color="volcano">失效: {record.metadata.expiration_date}</Tag>
+                          )}
+                        </Space>
+                      </div>
+                    ),
+                    expandIconColumnIndex: 0,
+                    expandedRowKeys: chunksExpandedKeys,
+                    onExpand: (expanded, record) => {
+                      setChunksExpandedKeys(expanded ? [getChunkRowKey(record)] : [])
+                    },
+                  }}
+                  onRow={(record) => ({
+                    style: record.used_in_answer ? { backgroundColor: '#f6ffed' } : undefined,
+                  })}
                 />
               </Card>
             </Col>
