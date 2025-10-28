@@ -206,3 +206,23 @@ async def get_tags():
             status_code=500,
             detail="获取标签列表失败"
         )
+
+@router.get("/by-source-session/{session_id}", response_model=ApiResponse[dict])
+async def get_test_case_by_source_session(session_id: str):
+    """根据源会话ID获取对应的测试用例信息"""
+    try:
+        result = test_case_service.get_test_case_by_source_session(session_id)
+
+        if not result:
+            logger.info("No test case found for source session", source_session=session_id)
+            return ApiResponse(success=True, data={})
+
+        logger.info("Test case found for source session", source_session=session_id, test_case_id=result.get("id"))
+        return ApiResponse(success=True, data=result)
+
+    except Exception as e:
+        logger.error("Get test case by source session failed", source_session=session_id, error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="根据源会话ID获取测试用例失败"
+        )

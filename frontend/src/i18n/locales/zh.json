@@ -64,8 +64,10 @@
         "modelName": "模型名称",
         "parameters": "参数",
         "systemPrompt": "系统提示词",
-        "userInstruction": "用户指令"
-      }
+      "userInstruction": "用户指令"
+      },
+      "linkedTestCase": "关联测试用例",
+      "noLinkedTestCase": "未找到关联测试用例"
     },
     "selectedRecords": "已选择 {{count}} 条记录",
     "pagination": "第 {{start}}-{{end}} 条，共 {{total}} 条",
@@ -248,6 +250,8 @@
     "batchDeleteFailed": "批量删除失败",
     "updateSuccess": "更新成功",
     "updateFailed": "更新失败",
+    "createSuccess": "创建成功",
+    "createMaybeFailed": "创建响应未表明成功",
     "fetchFailed": "获取测试用例列表失败",
     "details": "详情"
   },
@@ -571,5 +575,17 @@
     "chineseDisplay": "中文",
     "shortEn": "EN",
     "shortZh": "中"
-  }
+},
+"common": {
+  "actions": "操作",
+  "view": "查看",
+  "ok": "确定",
+  "cancel": "取消",
+  "confirm": "确认",
+  "loading": "加载中...",
+  "error": "错误",
+  "success": "成功",
+  "warning": "警告",
+  "info": "信息"
+}
 }

@@ -1,9 +1,10 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
 
-// Prefer backend on 8001 during development to avoid env mismatches
+// Single source of truth: in development always use Vite proxy '/api'
+// In production respect VITE_API_URL, otherwise fall back to '/api'
 const API_BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:8001/api'
+  ? '/api'
   : (import.meta.env.VITE_API_URL || '/api')
 
 const apiClient = axios.create({
@@ -75,6 +76,8 @@ export const testCaseService = {
     apiClient.get<ApiResponse>('/v1/test-cases/statistics/overview'),
   getTags: () =>
     apiClient.get<ApiResponse>('/v1/test-cases/tags'),
+  getBySourceSession: (sessionId: string) =>
+    apiClient.get<ApiResponse>(`/v1/test-cases/by-source-session/${sessionId}`),
 }
 
 // 标签相关API

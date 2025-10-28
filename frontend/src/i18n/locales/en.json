@@ -63,9 +63,11 @@
         "promptConfig": "Prompt Configuration",
         "modelName": "Model Name",
         "parameters": "Parameters",
-        "systemPrompt": "System Prompt",
-        "userInstruction": "User Instruction"
-      }
+      "systemPrompt": "System Prompt",
+      "userInstruction": "User Instruction"
+      },
+      "linkedTestCase": "Linked Test Case",
+      "noLinkedTestCase": "No linked test case found"
     },
     "selectedRecords": "Selected {{count}} records",
     "pagination": "Items {{start}}-{{end}} of {{total}}",
@@ -248,6 +250,8 @@
     "batchDeleteFailed": "Batch delete failed",
     "updateSuccess": "Update successful",
     "updateFailed": "Update failed",
+    "createSuccess": "Test case created",
+    "createMaybeFailed": "Creation response did not indicate success",
     "fetchFailed": "Failed to fetch test case list",
     "details": "Details",
     "editModal": {
@@ -561,5 +565,17 @@
     "chineseDisplay": "中文",
     "shortEn": "EN",
     "shortZh": "中"
+  },
+  "common": {
+    "actions": "Actions",
+    "view": "View",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
   }
 }

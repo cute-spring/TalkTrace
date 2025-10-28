@@ -19,7 +19,7 @@ import {
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import type { ColumnsType } from 'antd/es/table'
-import { historyService } from '../services/api'
+import { historyService, testCaseService } from '../services/api'
 
 const { RangePicker } = DatePicker
 const { Title, Text } = Typography
@@ -94,6 +94,19 @@ const HistoryPage: React.FC = () => {
 
   const [models, setModels] = useState<string[]>([])
   const [modelsLoading, setModelsLoading] = useState(true)
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
+
+  // Helper to safely render prompt values that may be strings or objects
+  const resolvePromptContent = (prompt: any): string => {
+    if (!prompt) return 'N/A'
+    if (typeof prompt === 'string') return prompt
+    if (typeof prompt?.content === 'string') return prompt.content
+    try {
+      return JSON.stringify(prompt, null, 2)
+    } catch {
+      return String(prompt)
+    }
+  }
 
   // 获取可用模型列表
   useEffect(() => {
@@ -127,12 +140,35 @@ const HistoryPage: React.FC = () => {
   const fetchHistory = async () => {
     setLoading(true)
     try {
-      const response = await historyService.search(filters)
+      // Map frontend filters to backend expected query params (camelCase)
+      const apiParams = {
+        page: filters.page,
+        pageSize: filters.pageSize,
+        startTime: filters.startTime,
+        endTime: filters.endTime,
+        keywords: filters.keywords || undefined,
+        modelIds: Array.isArray(filters.modelIds) && filters.modelIds.length > 0 ? filters.modelIds : undefined,
+        ratingRange: filters.ratingRange
+          ? `${filters.ratingRange[0]},${filters.ratingRange[1]}`
+          : undefined,
+      }
 
-      // The actual data is in response.data.data.items (API has extra data wrapper)
-      const actualData = response.data.data?.items || response.data.items || []
-      const paginationData = response.data.data || response.data
-      setData(actualData)
+      const response = await historyService.search(apiParams)
+
+      // Normalize API payload shape to avoid type errors
+      const raw: any = response?.data
+      const payload: any = raw?.data ?? raw
+      const items: any[] = Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.data?.items)
+        ? payload.data.items
+        : Array.isArray(payload)
+        ? payload
+        : []
+      const paginationData: any = payload?.page !== undefined || payload?.total !== undefined
+        ? payload
+        : payload?.data ?? {}
+      setData(items)
       setPagination(paginationData)
     } catch (error) {
       message.error(t('common.error'))
@@ -161,32 +197,139 @@ const HistoryPage: React.FC = () => {
     }
   }
 
-  const handleViewDetails = (record: HistoryRecord) => {
-    // Use search results with complete retrieval chunk information
+  const handleViewDetails = async (record: HistoryRecord) => {
+    // Fetch session details and linked test case by source_session
+    let sessionDetail: any = null
+    let sessionDetailsList: any[] = []
+    let linkedCase: any = null
+    try {
+      const [detailsResp, mappingResp] = await Promise.all([
+        historyService.getSessionDetails(record.session_id),
+        testCaseService.getBySourceSession(record.session_id),
+      ])
+
+      const detailsRaw: any = detailsResp?.data
+      const detailsPayload: any = detailsRaw?.data ?? detailsRaw
+      sessionDetail = Array.isArray(detailsPayload) ? (detailsPayload[0] || null) : detailsPayload || null
+      sessionDetailsList = Array.isArray(detailsPayload)
+        ? detailsPayload.filter(Boolean)
+        : (detailsPayload ? [detailsPayload] : [])
+
+      const mappingRaw: any = mappingResp?.data
+      linkedCase = mappingRaw?.data ?? null
+    } catch (e) {
+      console.warn('Failed to load additional session/test case details:', e)
+    }
+
+    // Use resolved details if available, otherwise fallback to row record
+    const conversation_history = (sessionDetailsList || []).flatMap((d: any, idx: number) => {
+      const entries: any[] = []
+      if (d?.user_query) entries.push({ role: 'user', content: d.user_query, timestamp: d.created_at, turn: idx + 1 })
+      if (d?.ai_response) entries.push({ role: 'assistant', content: d.ai_response, timestamp: d.created_at, turn: idx + 1 })
+      return entries
+    })
+    const display = {
+      session_id: sessionDetail?.session_id || record.session_id,
+      model_id: sessionDetail?.model_id || record.model_id,
+      user_query: sessionDetail?.user_query || record.user_query,
+      ai_response: sessionDetail?.ai_response || record.ai_response,
+      retrieval_chunks: sessionDetail?.retrieval_chunks || record.retrieval_chunks,
+      user_rating: record.user_rating,
+      created_at: sessionDetail?.created_at || record.created_at,
+      test_config: sessionDetail?.test_config || record.test_config,
+      conversation_history,
+    }
+
+    // Show details modal
     Modal.info({
       title: t('history.modal.sessionId'),
       width: 1000,
       okText: t('common.ok'),
       content: (
         <div style={{ marginTop: 16 }}>
+          {/* Linked Test Case Section */}
+          <div style={{ marginBottom: 16 }}>
+            <Title level={5} style={{ margin: 0 }}>{t('history.modal.linkedTestCase') || 'Linked Test Case'}</Title>
+            <div style={{ marginTop: 8 }}>
+              {linkedCase && linkedCase.id ? (
+                <Space wrap>
+                  <Text strong>ID：</Text>
+                  <Text code>{linkedCase.id}</Text>
+                  <Text strong style={{ marginLeft: 12 }}>Name：</Text>
+                  <Text>{linkedCase.name}</Text>
+                  <Text strong style={{ marginLeft: 12 }}>Owner：</Text>
+                  <Text>{linkedCase.owner || 'unknown'}</Text>
+                  <Text strong style={{ marginLeft: 12 }}>Created：</Text>
+                  <Text>
+                    {(() => {
+                      try {
+                        const normalized = (linkedCase.created_date || '').replace('+00:00Z', 'Z')
+                        const parsed = dayjs(normalized)
+                        return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : (linkedCase.created_date || 'N/A')
+                      } catch {
+                        return linkedCase.created_date || 'N/A'
+                      }
+                    })()}
+                  </Text>
+                </Space>
+              ) : (
+                <Text type="secondary">{t('history.modal.noLinkedTestCase') || 'No linked test case found'}</Text>
+              )}
+            </div>
+          </div>
+
           <div style={{ marginBottom: 16 }}>
             <Text strong>{t('history.modal.sessionId')}</Text>
-            <Text code>{record.session_id}</Text>
+            <Text code>{display.session_id}</Text>
           </div>
           <div style={{ marginBottom: 16 }}>
             <Text strong>{t('history.modal.model')}</Text>
-            <Tag color="blue">{record.model_id}</Tag>
+            <Tag color="blue">{display.model_id}</Tag>
           </div>
           <div style={{ marginBottom: 16 }}>
             <Text strong>{t('history.modal.userQuery')}</Text>
             <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, marginTop: 8 }}>
-              {record.user_query}
+              {display.user_query}
             </div>
           </div>
           <div style={{ marginBottom: 16 }}>
             <Text strong>{t('history.modal.aiResponse')}</Text>
             <div style={{ background: '#f0f7ff', padding: 12, borderRadius: 4, marginTop: 8 }}>
-              {record.ai_response}
+              {display.ai_response}
+            </div>
+          </div>
+
+          {/* Conversation History section */}
+          <div style={{ marginBottom: 16 }}>
+            <Title level={5} style={{ margin: 0 }}>{t('conversationHistory.title')}</Title>
+            <div style={{ marginTop: 8 }}>
+              {Array.isArray(display.conversation_history) && display.conversation_history.length > 0 ? (
+                <div>
+                  {display.conversation_history.map((msg: any, i: number) => (
+                    <Card key={`conv-${i}`} size="small" style={{ marginBottom: 8 }}>
+                      <Space style={{ marginBottom: 4 }}>
+                        <Tag color={msg.role === 'user' ? 'geekblue' : (msg.role === 'assistant' ? 'green' : 'default')}>
+                          {msg.role === 'user' ? t('conversationHistory.user') : (msg.role === 'assistant' ? t('conversationHistory.assistant') : (msg.role || 'system'))}
+                        </Tag>
+                        <Text type="secondary">
+                          {(() => {
+                            try {
+                              const normalized = (msg.timestamp || '').replace('+00:00Z', 'Z')
+                              const parsed = dayjs(normalized)
+                              return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : (msg.timestamp || '')
+                            } catch {
+                              return msg.timestamp || ''
+                            }
+                          })()}
+                        </Text>
+                      </Space>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Text type="secondary">{t('history.noData')}</Text>
+              )}
             </div>
           </div>
 
@@ -194,9 +337,9 @@ const HistoryPage: React.FC = () => {
           <div style={{ marginBottom: 16 }}>
             <Text strong>{t('history.modal.retrievalChunks')}</Text>
             <div style={{ marginTop: 8 }}>
-              {record.retrieval_chunks && record.retrieval_chunks.length > 0 ? (
+              {display.retrieval_chunks && display.retrieval_chunks.length > 0 ? (
                 <div>
-                  {record.retrieval_chunks.map((chunk: any, index: number) => (
+                  {display.retrieval_chunks.map((chunk: any, index: number) => (
                     <Card
                       key={chunk.id || index}
                       size="small"
@@ -242,7 +385,7 @@ const HistoryPage: React.FC = () => {
 
           <div style={{ marginBottom: 16 }}>
             <Text strong>{t('history.modal.userRating')}</Text>
-            <Rate disabled value={record.user_rating} style={{ marginLeft: 8 }} />
+            <Rate disabled value={display.user_rating} style={{ marginLeft: 8 }} />
           </div>
           <div>
             <Text strong>{t('history.modal.createdAt')}</Text>
@@ -250,20 +393,20 @@ const HistoryPage: React.FC = () => {
               {(() => {
                 try {
                   // Handle various date formats
-                  if (!record.created_at) return 'N/A'
+                  if (!display.created_at) return 'N/A'
                   // Normalize date format
-                  const normalizedDate = record.created_at.replace('+00:00Z', 'Z')
+                  const normalizedDate = display.created_at.replace('+00:00Z', 'Z')
                   const parsed = dayjs(normalizedDate)
-                  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : record.created_at
+                  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : display.created_at
                 } catch (error) {
-                  return record.created_at || 'Invalid Date'
+                  return display.created_at || 'Invalid Date'
                 }
               })()}
             </Text>
           </div>
 
           {/* Test Configuration Section */}
-          {record.test_config && (
+          {display.test_config && (
             <div style={{ marginTop: 24, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 6 }}>
               <Title level={5} style={{ margin: '0 0 16px 0', color: '#1890ff' }}>
                 {t('history.modal.testConfig.title')}
@@ -275,13 +418,13 @@ const HistoryPage: React.FC = () => {
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <div>
                         <Text strong>{t('history.modal.testConfig.modelName')}：</Text>
-                        <Text>{record.test_config.model?.name || record.model_id || 'N/A'}</Text>
+                        <Text>{display.test_config?.model?.name || display.model_id || 'N/A'}</Text>
                       </div>
-                      {record.test_config.model?.params && (
+                      {display.test_config?.model?.params && (
                         <div>
                           <Text strong>{t('history.modal.testConfig.parameters')}：</Text>
                           <pre style={{ fontSize: '12px', marginTop: 4, padding: 8, backgroundColor: '#fff', border: '1px solid #d9d9d9', borderRadius: 4 }}>
-                            {JSON.stringify(record.test_config.model.params, null, 2)}
+                            {JSON.stringify(display.test_config?.model?.params, null, 2)}
                           </pre>
                         </div>
                       )}
@@ -294,9 +437,9 @@ const HistoryPage: React.FC = () => {
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <div>
                         <Text strong>{t('history.modal.testConfig.systemPrompt')}：</Text>
-                        {record.test_config?.prompts?.system?.version && (
+                        {display.test_config?.prompts?.system?.version && (
                           <Tag color="green" style={{ marginLeft: 8, fontSize: '11px' }}>
-                            {record.test_config.prompts.system.version}
+                            {display.test_config?.prompts?.system?.version}
                           </Tag>
                         )}
                         <div style={{
@@ -310,21 +453,20 @@ const HistoryPage: React.FC = () => {
                           fontSize: '12px'
                         }}>
                           <Text code>
-                            {record.test_config?.prompts?.system?.content ||
-                             record.test_config?.prompts?.system || 'N/A'}
+                            {resolvePromptContent(display.test_config?.prompts?.system)}
                           </Text>
                         </div>
                       </div>
                       <div>
                         <Text strong>{t('history.modal.testConfig.userInstruction')}：</Text>
-                        {record.test_config?.prompts?.user_instruction?.role && (
+                        {display.test_config?.prompts?.user_instruction?.role && (
                           <Tag color="orange" style={{ marginLeft: 8, fontSize: '11px' }}>
-                            {record.test_config.prompts.user_instruction.role}
+                            {display.test_config?.prompts?.user_instruction?.role}
                           </Tag>
                         )}
-                        {record.test_config?.prompts?.user_instruction?.version && (
+                        {display.test_config?.prompts?.user_instruction?.version && (
                           <Tag color="blue" style={{ marginLeft: 4, fontSize: '11px' }}>
-                            {record.test_config.prompts.user_instruction.version}
+                            {display.test_config?.prompts?.user_instruction?.version}
                           </Tag>
                         )}
                         <div style={{
@@ -338,8 +480,7 @@ const HistoryPage: React.FC = () => {
                           fontSize: '12px'
                         }}>
                           <Text code>
-                            {record.test_config?.prompts?.user_instruction?.content ||
-                             record.test_config?.prompts?.user_instruction || 'N/A'}
+                            {resolvePromptContent(display.test_config?.prompts?.user_instruction)}
                           </Text>
                         </div>
                       </div>
@@ -352,6 +493,257 @@ const HistoryPage: React.FC = () => {
         </div>
       ),
     })
+  }
+
+  // Create Test Case from a history record, including all non-analysis fields
+  const handleCreateTestCase = async (record: HistoryRecord) => {
+    try {
+      // Enrich with session details to capture conversation_history and full test_config
+      const detailsResp = await historyService.getSessionDetails(record.session_id)
+      const detailsRaw: any = detailsResp?.data
+      const detailsPayload: any = detailsRaw?.data ?? detailsRaw
+      const sessionDetail: any = Array.isArray(detailsPayload) ? (detailsPayload[0] || null) : detailsPayload || {}
+
+      // Merge record and details with preference to detailed fields
+      const merged: any = {
+        session_id: sessionDetail?.session_id || record.session_id,
+        model_id: sessionDetail?.model_id || record.model_id,
+        user_query: sessionDetail?.user_query || record.user_query,
+        ai_response: sessionDetail?.ai_response || record.ai_response,
+        retrieval_chunks: sessionDetail?.retrieval_chunks || record.retrieval_chunks || [],
+        user_rating: record.user_rating,
+        created_at: sessionDetail?.created_at || record.created_at,
+        conversation_history: sessionDetail?.conversation_history || [],
+        test_config: sessionDetail?.test_config || record.test_config,
+      }
+
+      // Build payload excluding any analysis fields
+      const payload: any = {
+        // Basic identity
+        name: typeof merged.user_query === 'string' && merged.user_query.trim()
+          ? merged.user_query.trim().slice(0, 80)
+          : `Session ${merged.session_id}`,
+        description: typeof merged.ai_response === 'string' ? merged.ai_response : '',
+        status: 'active',
+
+        // Metadata
+        metadata: {
+          source_session: merged.session_id,
+          created_date: merged.created_at,
+        },
+
+        // Test configuration
+        test_config: merged.test_config ? {
+          model: merged.test_config?.model ? {
+            name: merged.test_config.model?.name,
+            params: merged.test_config.model?.params,
+          } : undefined,
+          prompts: merged.test_config?.prompts ? {
+            system: merged.test_config.prompts?.system ? {
+              version: merged.test_config.prompts.system?.version,
+              content: merged.test_config.prompts.system?.content,
+            } : undefined,
+            user_instruction: merged.test_config.prompts?.user_instruction ? {
+              role: merged.test_config.prompts.user_instruction?.role,
+              version: merged.test_config.prompts.user_instruction?.version,
+              content: merged.test_config.prompts.user_instruction?.content,
+            } : undefined,
+          } : undefined,
+        } : undefined,
+
+        // Input
+        input: {
+          current_query: merged.user_query,
+          conversation_history: Array.isArray(merged.conversation_history) ? merged.conversation_history : [],
+          current_retrieved_chunks: Array.isArray(merged.retrieval_chunks) ? merged.retrieval_chunks : [],
+        },
+
+        // Execution
+        execution: {
+          actual: merged.ai_response,
+          user_feedback: typeof merged.user_rating === 'number' ? { rating: merged.user_rating } : undefined,
+        },
+      }
+
+      const resp = await testCaseService.create(payload)
+      if (resp?.data?.success) {
+        message.success(t('testCases.createSuccess') || 'Test case created')
+      } else {
+        message.warning(t('testCases.createMaybeFailed') || 'Creation response did not indicate success')
+      }
+    } catch (error) {
+      console.error('Failed to create test case from history:', error)
+      message.error(t('common.error'))
+    }
+  }
+
+  // Inline expanded row renderer to show session details
+  const renderExpandedRow = (record: HistoryRecord) => (
+    <div style={{ background: '#fafafa', padding: 16 }}>
+      <div style={{ marginBottom: 12 }}>
+        <Text strong>{t('history.modal.sessionId')}</Text>
+        <Text code style={{ marginLeft: 8 }}>{record.session_id}</Text>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <Text strong>{t('history.modal.model')}</Text>
+        <Tag color="blue" style={{ marginLeft: 8 }}>{record.model_id}</Tag>
+      </div>
+
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <Card size="small" title={t('history.modal.userQuery')}>
+            <div style={{ background: '#f5f5f5', padding: 8, borderRadius: 4 }}>
+              {record.user_query}
+            </div>
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card size="small" title={t('history.modal.aiResponse')}>
+            <div style={{ background: '#f0f7ff', padding: 8, borderRadius: 4 }}>
+              {record.ai_response}
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <div style={{ marginTop: 16 }}>
+        <Text strong>{t('history.modal.userRating')}</Text>
+        <Rate disabled value={record.user_rating} style={{ marginLeft: 8 }} />
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Text strong>{t('history.modal.createdAt')}</Text>{' '}
+        <Text>
+          {(() => {
+            try {
+              if (!record.created_at) return 'N/A'
+              const normalizedDate = record.created_at.replace('+00:00Z', 'Z')
+              const parsed = dayjs(normalizedDate)
+              return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : record.created_at
+            } catch (error) {
+              return record.created_at || 'Invalid Date'
+            }
+          })()}
+        </Text>
+      </div>
+
+      {/* Retrieval chunks section */}
+      <div style={{ marginTop: 16 }}>
+        <Text strong>{t('history.modal.retrievalChunks')}</Text>
+        <div style={{ marginTop: 8 }}>
+          {record.retrieval_chunks && record.retrieval_chunks.length > 0 ? (
+            <div>
+              {record.retrieval_chunks.map((chunk: any, index: number) => (
+                <Card
+                  key={chunk.id || index}
+                  size="small"
+                  style={{ marginBottom: 8 }}
+                  title={
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{chunk.title || `${t('history.modal.chunk')} ${index + 1}`}</span>
+                      <Tag color="green">{t('history.modal.confidence')} {chunk.metadata?.confidence ? (chunk.metadata.confidence * 100).toFixed(1) : 'N/A'}%</Tag>
+                    </div>
+                  }
+                >
+                  <div style={{ marginBottom: 8 }}>
+                    <Text type="secondary">{t('history.modal.source')}</Text>
+                    <a href={chunk.source} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                      {chunk.source || t('history.modal.unknownSource')}
+                    </a>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <Text type="secondary">{t('history.modal.content')}</Text>
+                    <div style={{ background: '#fff', padding: 8, borderRadius: 4, marginTop: 4, maxHeight: 120, overflowY: 'auto' }}>
+                      {chunk.content}
+                    </div>
+                  </div>
+                  {chunk.metadata && (
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      <Space wrap>
+                        <span>{t('history.modal.published')} {chunk.metadata.publish_date || 'N/A'}</span>
+                        <span>{t('history.modal.effective')} {chunk.metadata.effective_date || 'N/A'}</span>
+                        <span>{t('history.modal.expired')} {chunk.metadata.expiration_date || 'N/A'}</span>
+                        <Tag color="orange">{chunk.metadata.chunk_type || t('history.modal.unclassified')}</Tag>
+                        <span>{t('history.modal.rank')} #{chunk.metadata.retrieval_rank || index + 1}</span>
+                      </Space>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">{t('history.modal.noChunks')}</Text>
+          )}
+        </div>
+      </div>
+
+      {/* Test Configuration Section */}
+      {record.test_config && (
+        <div style={{ marginTop: 16, padding: 12, backgroundColor: '#f8f9fa', borderRadius: 6 }}>
+          <Title level={5} style={{ margin: '0 0 12px 0', color: '#1890ff' }}>
+            {t('history.modal.testConfig.title')}
+          </Title>
+
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Card size="small" title={t('history.modal.testConfig.modelConfig')}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div>
+                    <Text strong>{t('history.modal.testConfig.modelName')}：</Text>
+                    <Text>{record.test_config.model?.name || record.model_id || 'N/A'}</Text>
+                  </div>
+                  {record.test_config.model?.params && (
+                    <div>
+                      <Text strong>{t('history.modal.testConfig.parameters')}</Text>
+                      <div style={{ marginTop: 4, padding: 8, backgroundColor: '#fff', border: '1px solid #d9d9d9', borderRadius: 4, maxHeight: 120, overflowY: 'auto', fontSize: '12px' }}>
+                        <Text code>
+                          {JSON.stringify(record.test_config.model.params)}
+                        </Text>
+                      </div>
+                    </div>
+                  )}
+                </Space>
+              </Card>
+            </Col>
+            <Col span={12}>
+              <Card size="small" title={t('history.modal.testConfig.promptConfig')}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div>
+                    <Text strong>{t('history.modal.testConfig.systemPrompt')}：</Text>
+                    <div style={{ marginTop: 4, padding: 8, backgroundColor: '#fff', border: '1px solid #d9d9d9', borderRadius: 4, maxHeight: 120, overflowY: 'auto', fontSize: '12px' }}>
+                      <Text code>
+                        {resolvePromptContent(record.test_config?.prompts?.system)}
+                      </Text>
+                    </div>
+                  </div>
+                  <div>
+                    <Text strong>{t('history.modal.testConfig.userInstruction')}：</Text>
+                    {record.test_config?.prompts?.user_instruction?.role && (
+                      <Tag color="orange" style={{ marginLeft: 8, fontSize: '11px' }}>
+                        {record.test_config.prompts.user_instruction.role}
+                      </Tag>
+                    )}
+                    {record.test_config?.prompts?.user_instruction?.version && (
+                      <Tag color="blue" style={{ marginLeft: 4, fontSize: '11px' }}>
+                        {record.test_config.prompts.user_instruction.version}
+                      </Tag>
+                    )}
+                    <div style={{ marginTop: 4, padding: 8, backgroundColor: '#fff', border: '1px solid #d9d9d9', borderRadius: 4, maxHeight: 120, overflowY: 'auto', fontSize: '12px' }}>
+                      <Text code>
+                        {resolvePromptContent(record.test_config?.prompts?.user_instruction)}
+                      </Text>
+                    </div>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+        </div>
+      )}
+    </div>
+  )
+
+  const handleExpand = (expanded: boolean, record: HistoryRecord) => {
+    setExpandedRowKeys(expanded ? [record.session_id] : [])
   }
 
   const columns: ColumnsType<HistoryRecord> = [
@@ -446,13 +838,22 @@ const HistoryPage: React.FC = () => {
       key: 'actions',
       width: 100,
       render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          onClick={() => handleViewDetails(record)}
-        >
-          {t('common.view')}
-        </Button>
+        <Space>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleViewDetails(record)}
+          >
+            {t('common.view')}
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleCreateTestCase(record)}
+          >
+            {t('testCases.create')}
+          </Button>
+        </Space>
       ),
     },
   ]
@@ -568,6 +969,9 @@ const HistoryPage: React.FC = () => {
           rowKey="session_id"
           loading={loading}
           rowSelection={rowSelection}
+          expandable={{ expandedRowRender: renderExpandedRow, expandedRowKeys, onExpand: handleExpand }}
+          sticky
+          scroll={{ x: 'max-content', y: 520 }}
           pagination={{
             current: pagination?.page,
             pageSize: pagination?.page_size || 20,
