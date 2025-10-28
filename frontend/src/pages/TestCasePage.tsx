@@ -48,6 +48,100 @@ const { confirm } = Modal
     tags: Array<{ name: string; color: string }>
   }
 
+  // --- Mock data generator for development preview ---
+  const MOCK_OWNERS = ['alice', 'bob', 'charlie', 'diana', 'eva', 'frank', 'grace']
+  const MOCK_DOMAINS = ['finance', 'technology', 'healthcare', 'general'] as const
+  const MOCK_DIFFICULTIES = ['easy', 'medium', 'hard'] as const
+  const TAG_POOL: Array<{ name: string; color: string }> = [
+    { name: 'regression', color: 'geekblue' },
+    { name: 'smoke', color: 'green' },
+    { name: 'api', color: 'blue' },
+    { name: 'ui', color: 'purple' },
+    { name: 'security', color: 'volcano' },
+    { name: 'performance', color: 'magenta' },
+    { name: 'compliance', color: 'orange' },
+    { name: 'finance', color: 'gold' },
+    { name: 'healthcare', color: 'lime' },
+    { name: 'ml', color: 'cyan' },
+  ]
+
+  const pick = <T,>(arr: readonly T[] | T[]) => arr[Math.floor(Math.random() * arr.length)]
+  const sampleTags = (count: number) => {
+    const chosen: Array<{ name: string; color: string }> = []
+    const used = new Set<string>()
+    while (chosen.length < count) {
+      const t = TAG_POOL[Math.floor(Math.random() * TAG_POOL.length)]
+      if (!used.has(t.name)) {
+        used.add(t.name)
+        chosen.push(t)
+      }
+    }
+    return chosen
+  }
+
+  const randomDateWithinDays = (days: number) => {
+    const now = Date.now()
+    const offset = Math.floor(Math.random() * days * 24 * 60 * 60 * 1000)
+    return new Date(now - offset).toISOString()
+  }
+
+  const buildMockList = (
+    page: number,
+    pageSize: number,
+    filters: { status?: string; domain?: string; priority?: string; search?: string }
+  ) => {
+    const total = 48
+    const all: TestCase[] = Array.from({ length: total }).map((_, idx) => {
+      const statusPool: TestStatus[] = ['draft', 'pending_review', 'approved', 'published', 'rejected']
+      const prioPool: PriorityLevel[] = ['low', 'medium', 'high']
+      const domain = pick(MOCK_DOMAINS)
+      const difficulty = pick(MOCK_DIFFICULTIES)
+      const status = pick(statusPool)
+      const priority = pick(prioPool)
+      const owner = pick(MOCK_OWNERS)
+      const name = `TC-${String(idx + 1).padStart(3, '0')} ${domain.toUpperCase()} ${difficulty}`
+      const description = `Validate ${domain} flows with ${difficulty} complexity; ensure ${status} criteria met.`
+      const created = randomDateWithinDays(90)
+      const updated = Math.random() < 0.7 ? randomDateWithinDays(60) : undefined
+      return {
+        id: `TC-${idx + 1}`,
+        name,
+        description,
+        status,
+        owner,
+        priority,
+        domain,
+        difficulty,
+        version: `v1.${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}`,
+        created_date: created,
+        updated_date: updated,
+        tags: sampleTags(1 + Math.floor(Math.random() * 3)),
+      }
+    })
+
+    // Apply simple filters to make the mock behave like real data
+    const filtered = all.filter(item => {
+      if (filters.status && item.status !== filters.status) return false
+      if (filters.domain && item.domain !== filters.domain) return false
+      if (filters.priority && item.priority !== filters.priority) return false
+      if (filters.search) {
+        const q = filters.search.toLowerCase()
+        const text = `${item.name} ${item.description || ''} ${item.owner}`.toLowerCase()
+        if (!text.includes(q)) return false
+      }
+      return true
+    })
+
+    const start = (page - 1) * pageSize
+    const items = filtered.slice(start, start + pageSize)
+    return {
+      items,
+      page,
+      pageSize,
+      total: filtered.length,
+    }
+  }
+
 const TestCasePage: React.FC = () => {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -112,14 +206,36 @@ const TestCasePage: React.FC = () => {
 
       const response = await testCaseService.getList(apiParams)
       console.log('API Response:', response)
-      console.log('Response data:', response.data)
-      console.log('Items:', response.data?.data?.items)
-      console.log('Items length:', response.data?.data?.items?.length)
-      // Fix: Access the nested data structure correctly
-      setData(response.data.data)
+      const payload = response?.data?.data
+      const itemsLen = payload?.items?.length || 0
+      console.log('Resolved payload items length:', itemsLen)
+
+      // Fallback to realistic mock data in development when API returns empty
+      if (import.meta.env.MODE === 'development' && itemsLen === 0) {
+        const mock = buildMockList(filters.page, filters.pageSize, {
+          status: filters.status,
+          domain: filters.domain,
+          priority: filters.priority,
+          search: filters.search,
+        })
+        console.log('Using mock test cases for development:', mock)
+        setData(mock)
+      } else {
+        setData(payload)
+      }
     } catch (error) {
       message.error(t('testCases.fetchFailed'))
       console.error('Failed to fetch test cases:', error)
+      // Provide mock data even when the API fails during development
+      if (import.meta.env.MODE === 'development') {
+        const mock = buildMockList(filters.page, filters.pageSize, {
+          status: filters.status,
+          domain: filters.domain,
+          priority: filters.priority,
+          search: filters.search,
+        })
+        setData(mock)
+      }
     } finally {
       setLoading(false)
     }
