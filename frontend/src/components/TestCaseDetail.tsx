@@ -6,7 +6,6 @@ import {
   Tag,
   Typography,
   Space,
-  Collapse,
   Table,
   Progress,
   Button,
@@ -19,7 +18,6 @@ import {
   Tabs,
   Row,
   Col,
-  Badge,
   message,
   Select,
   Spin,
@@ -28,16 +26,12 @@ import {
   EditOutlined,
   SaveOutlined,
   CloseOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
 } from '@ant-design/icons'
 import { Statistic } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { testCaseService } from '../services/api'
 
 const { Title, Text, Paragraph } = Typography
-const { Panel } = Collapse
 const { TabPane } = Tabs
 const { TextArea } = Input
 
@@ -157,12 +151,10 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
   visible,
   onClose,
 }) => {
-  const { t } = useTranslation()
+ const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [testCase, setTestCase] = useState<TestCaseDetail | null>(null)
-  const [editing, setEditing] = useState(false)
   const [analysisEditing, setAnalysisEditing] = useState(false)
-  const [form] = Form.useForm()
   const [analysisForm] = Form.useForm()
 
   useEffect(() => {
@@ -185,19 +177,8 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
     } catch (error) {
       console.error('Failed to load test case detail:', error)
       message.error(t('common.error'))
-    } finally {
+   } finally {
       setLoading(false)
-    }
-  }
-
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields()
-      await testCaseService.update(testCaseId, values)
-      setEditing(false)
-      loadTestCaseDetail()
-    } catch (error) {
-      console.error('Failed to update test case:', error)
     }
   }
 

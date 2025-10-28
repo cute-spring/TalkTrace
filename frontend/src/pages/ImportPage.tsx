@@ -20,14 +20,16 @@ import {
 } from 'antd'
 import { ImportOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { importService, historyService } from '../services/api'
+import { importService } from '../services/api'
 
 const { Step } = Steps
 const { Title, Text } = Typography
 
-interface ImportTask {
+ type ImportStatus = 'pending' | 'running' | 'completed' | 'failed'
+
+ interface ImportTask {
   taskId: string
-  status: string
+  status: ImportStatus
   total: number
   processed: number
   failed: number
@@ -36,14 +38,7 @@ interface ImportTask {
   endTime?: string
 }
 
-interface SessionRecord {
-  session_id: string
-  user_query: string
-  ai_response: string
-  user_rating: number
-  model_id: string
-  created_at: string
-}
+// Removed unused SessionRecord interface to satisfy TypeScript
 
 interface PreviewSession {
   session_id: string
@@ -82,7 +77,7 @@ const ImportPage: React.FC = () => {
       // If the result still contains placeholders, use template literals as fallback
       if (typeof result === 'string' && (result.includes('{{') || result.includes('{'))) {
         // For debugging in development
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.warn(`Translation interpolation failed for key "${key}", using fallback`)
         }
 
@@ -177,7 +172,6 @@ const ImportPage: React.FC = () => {
         defaultPriority: importConfig.defaultPriority,
         defaultDifficulty: importConfig.defaultDifficulty,
         includeAnalysis: importConfig.includeAnalysis,
-        skipDuplicates: importConfig.skipDuplicates,
       })
 
       // Debug: Log the response structure
@@ -196,6 +190,7 @@ const ImportPage: React.FC = () => {
         total: sessionIds.length,
         processed: 0,
         failed: 0,
+        skipped: 0,
         startTime: new Date().toISOString(),
       })
 
@@ -262,21 +257,21 @@ const ImportPage: React.FC = () => {
     loadImportTasks()
   }, [])
 
-  const getStatusTag = (status: string) => {
-    const statusConfig = {
-      pending: { color: 'default', icon: <ClockCircleOutlined />, text: t('import.statusTags.pending') },
-      running: { color: 'processing', icon: <ClockCircleOutlined />, text: t('import.statusTags.running') },
-      completed: { color: 'success', icon: <CheckCircleOutlined />, text: t('import.statusTags.completed') },
-      failed: { color: 'error', icon: <CheckCircleOutlined />, text: t('import.statusTags.failed') },
-    }
+ const getStatusTag = (status: ImportStatus) => {
+   const statusConfig: Record<ImportStatus, { color: string; icon: JSX.Element; text: string }> = {
+     pending: { color: 'default', icon: <ClockCircleOutlined />, text: t('import.statusTags.pending') },
+     running: { color: 'processing', icon: <ClockCircleOutlined />, text: t('import.statusTags.running') },
+     completed: { color: 'success', icon: <CheckCircleOutlined />, text: t('import.statusTags.completed') },
+     failed: { color: 'error', icon: <ExclamationCircleOutlined />, text: t('import.statusTags.failed') },
+   }
 
-    const config = statusConfig[status] || statusConfig.pending
-    return (
-      <Tag color={config.color} icon={config.icon}>
-        {config.text}
-      </Tag>
-    )
-  }
+   const config = statusConfig[status]
+   return (
+     <Tag color={config.color} icon={config.icon}>
+       {config.text}
+     </Tag>
+   )
+}
 
   const previewColumns: ColumnsType<PreviewSession> = [
     {
@@ -375,7 +370,7 @@ const ImportPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status) => getStatusTag(status),
+      render: (status: ImportStatus) => getStatusTag(status),
     },
     {
       title: t('import.tableColumns.total'),

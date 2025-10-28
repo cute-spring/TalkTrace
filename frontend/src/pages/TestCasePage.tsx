@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Card,
@@ -16,7 +16,6 @@ import {
   Drawer,
 } from 'antd'
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -31,25 +30,28 @@ const { Title, Text } = Typography
 const { Option } = Select
 const { confirm } = Modal
 
-interface TestCase {
-  id: string
-  name: string
-  description?: string
-  status: string
-  owner: string
-  priority: string
-  domain?: string
-  difficulty?: string
-  version: string
-  created_date: string
-  updated_date?: string
-  tags: Array<{ name: string; color: string }>
-}
+  type TestStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'rejected'
+  type PriorityLevel = 'low' | 'medium' | 'high'
+
+  interface TestCase {
+    id: string
+    name: string
+    description?: string
+    status: TestStatus
+    owner: string
+    priority: PriorityLevel
+    domain?: string
+    difficulty?: string
+    version: string
+    created_date: string
+    updated_date?: string
+    tags: Array<{ name: string; color: string }>
+  }
 
 const TestCasePage: React.FC = () => {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
+  // removed unused navigate
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -98,12 +100,12 @@ const TestCasePage: React.FC = () => {
       // Debug: Log the current filters state
       console.log('Current filters state:', filters)
 
-      // Convert frontend parameter names to backend parameter names
+      // Convert frontend parameter names to backend parameter names without delete
+      const { pageSize, ...restFilters } = filters
       const apiParams = {
-        ...filters,
-        page_size: filters.pageSize, // Convert pageSize to page_size for backend
+        ...restFilters,
+        page_size: pageSize, // Convert pageSize to page_size for backend
       }
-      delete apiParams.pageSize // Remove frontend parameter name
 
       // Debug: Log the API parameters being sent
       console.log('API parameters being sent:', apiParams)
@@ -238,8 +240,8 @@ const TestCasePage: React.FC = () => {
     }
   }
 
-  const getStatusTag = (status: string) => {
-    const statusConfig = {
+  const getStatusTag = (status: TestStatus) => {
+    const statusConfig: Record<TestStatus, { color: string; text: string }> = {
       draft: { color: 'default', text: t('status.draft') },
       pending_review: { color: 'processing', text: t('status.pending_review') },
       approved: { color: 'success', text: t('status.approved') },
@@ -251,8 +253,8 @@ const TestCasePage: React.FC = () => {
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
-  const getPriorityTag = (priority: string) => {
-    const priorityConfig = {
+  const getPriorityTag = (priority: PriorityLevel) => {
+    const priorityConfig: Record<PriorityLevel, { color: string; text: string }> = {
       low: { color: 'green', text: t('priority.low') },
       medium: { color: 'orange', text: t('priority.medium') },
       high: { color: 'red', text: t('priority.high') },
@@ -280,14 +282,14 @@ const TestCasePage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status) => getStatusTag(status),
+      render: (status: TestStatus) => getStatusTag(status),
     },
     {
       title: t('testCases.columns.priority'),
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
-      render: (priority) => getPriorityTag(priority),
+      render: (priority: PriorityLevel) => getPriorityTag(priority),
     },
     {
       title: t('testCases.columns.domain'),
@@ -314,12 +316,10 @@ const TestCasePage: React.FC = () => {
       dataIndex: 'tags',
       key: 'tags',
       width: 200,
-      render: (tags) => (
+      render: (tags: TestCase['tags']) => (
         <Space wrap>
-          {tags.map((tagItem, index) => (
-            <Tag key={index} color={tagItem.color}>
-              {tagItem.name}
-            </Tag>
+          {tags.map((tagItem: { name: string; color: string }, index: number) => (
+            <Tag key={index} color={tagItem.color}>{tagItem.name}</Tag>
           ))}
         </Space>
       ),
@@ -593,12 +593,12 @@ const TestCasePage: React.FC = () => {
 
             <div style={{ marginBottom: 16 }}>
               <Text strong>{t('testCaseDetail.basicInfo.createdTime')}</Text>
-              <Text>{new Date(currentTestCase.createdDate).toLocaleString()}</Text>
+              <Text>{new Date(currentTestCase.created_date).toLocaleString()}</Text>
             </div>
 
             <div style={{ marginBottom: 16 }}>
               <Text strong>{t('testCaseDetail.basicInfo.updatedTime')}</Text>
-              <Text>{new Date(currentTestCase.updatedDate).toLocaleString()}</Text>
+              <Text>{currentTestCase.updated_date ? new Date(currentTestCase.updated_date).toLocaleString() : '-'}</Text>
             </div>
           </div>
         )}
