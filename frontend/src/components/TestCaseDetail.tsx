@@ -153,6 +153,7 @@ interface TestCaseDetail {
     notes: string
     analyzed_by: string
     analysis_date: string
+    analysis_info?: any
   }
 }
 
@@ -461,6 +462,17 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
         ? values.optimization_suggestions.split('\n').filter((s: string) => s.trim())
         : []
 
+      // 处理分析信息：支持 JSON 或文本，JSON 解析失败则以原文本保存在 raw 字段
+      let analysisInfo: any = undefined
+      if (values.analysis_info && String(values.analysis_info).trim()) {
+        const raw = String(values.analysis_info).trim()
+        try {
+          analysisInfo = JSON.parse(raw)
+        } catch {
+          analysisInfo = { raw }
+        }
+      }
+
       // 构建分析数据
       const analysisData = {
         issue_type: values.issue_type,
@@ -476,8 +488,9 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
         },
         optimization_suggestions: optimizationSuggestions,
         notes: values.notes,
-        analyzed_by: "current_user@company.com", // 可以从用户信息获取
-        analysis_date: new Date().toISOString()
+        analyzed_by: values.analyzed_by || "current_user@company.com",
+        analysis_date: values.analysis_date || new Date().toISOString(),
+        analysis_info: analysisInfo
       }
 
       await testCaseService.update(testCaseId, { analysis: analysisData })
@@ -1061,7 +1074,12 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                         clarity: testCase.analysis.quality_scores.clarity,
                         citation_quality: testCase.analysis.quality_scores.citation_quality,
                         optimization_suggestions: testCase.analysis.optimization_suggestions.join('\n'),
-                        notes: testCase.analysis.notes
+                        notes: testCase.analysis.notes,
+                        analyzed_by: testCase.analysis.analyzed_by,
+                        analysis_date: testCase.analysis.analysis_date,
+                        analysis_info: typeof testCase.analysis.analysis_info === 'object'
+                          ? JSON.stringify(testCase.analysis.analysis_info, null, 2)
+                          : (testCase.analysis.analysis_info ? String(testCase.analysis.analysis_info) : '')
                       })
                     } else {
                       // 设置默认值
@@ -1076,7 +1094,10 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                         clarity: 3,
                         citation_quality: 3,
                         optimization_suggestions: '',
-                        notes: ''
+                        notes: '',
+                        analyzed_by: 'current_user@company.com',
+                        analysis_date: new Date().toISOString(),
+                        analysis_info: ''
                       })
                     }
                   }}
@@ -1251,6 +1272,24 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                   <TextArea rows={3} placeholder="记录分析过程中的重要发现和思考..." />
                 </Form.Item>
               </Card>
+
+              <Card title={t('testCaseDetail.analysis.analysisInfo')} size="small" style={{ marginTop: 16 }}>
+                <Row gutter={[16, 16]}>
+                  <Col span={12}>
+                    <Form.Item label={t('testCaseDetail.analysis.analyst')} name="analyzed_by">
+                      <Input placeholder="如：alice@company.com" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label={t('testCaseDetail.analysis.analysisTime')} name="analysis_date">
+                      <Input placeholder="ISO 时间，例如 2025-01-01T12:00:00Z（留空默认当前时间）" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Form.Item name="analysis_info">
+                  <TextArea rows={4} placeholder="可选：填写结构化元数据（JSON）或文本说明。JSON 将在保存时自动解析。" />
+                </Form.Item>
+              </Card>
             </Form>
           ) : (
             <Space direction="vertical" style={{ width: '100%' }}>
@@ -1296,6 +1335,26 @@ const TestCaseDetail: React.FC<TestCaseDetailProps> = ({
                             {new Date(testCase.analysis.analysis_date).toLocaleString()}
                           </Descriptions.Item>
                         </Descriptions>
+                        {testCase.analysis.analysis_info && (
+                          <div style={{ marginTop: 12 }}>
+                            <Text strong>详细信息</Text>
+                            <div style={{ marginTop: 8 }}>
+                              {typeof testCase.analysis.analysis_info === 'object' ? (
+                                <Descriptions bordered size="small" column={1}>
+                                  {Object.entries(testCase.analysis.analysis_info).map(([k, v]) => (
+                                    <Descriptions.Item key={k} label={k}>
+                                      {typeof v === 'string' ? v : JSON.stringify(v)}
+                                    </Descriptions.Item>
+                                  ))}
+                                </Descriptions>
+                              ) : (
+                                <Paragraph style={{ marginBottom: 0 }}>
+                                  {String(testCase.analysis.analysis_info)}
+                                </Paragraph>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </Card>
                     </Col>
                   </Row>
