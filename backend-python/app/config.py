@@ -24,7 +24,8 @@ class Settings(BaseSettings):
     # BigQuery Configuration
     bigquery_use_mock: bool = True  # 默认使用Mock服务
     gcp_project_id: Optional[str] = None
-    bigquery_dataset_id: Optional[str] = None
+    gcp_dataset_id: Optional[str] = None
+    gcp_table_id: Optional[str] = None
     google_application_credentials: Optional[str] = None
 
     @field_validator('allowed_origins', mode='before')
@@ -37,10 +38,12 @@ class Settings(BaseSettings):
     @property
     def use_real_bigquery(self) -> bool:
         """是否使用真实BigQuery服务"""
+        # 仅要求项目和数据集已配置即可尝试真实服务；
+        # 表ID用于部分脚本，可选，不再作为切换条件。
         return (
             not self.bigquery_use_mock and
-            self.gcp_project_id and
-            self.bigquery_dataset_id
+            self.gcp_project_id is not None and
+            self.gcp_dataset_id is not None
         )
 
 # 创建全局配置实例

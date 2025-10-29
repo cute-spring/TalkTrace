@@ -7,6 +7,7 @@ import os
 
 from app.config import settings
 from app.utils.logger import logger
+from app.services.history_service import HistoryService
 from app.api.v1 import history, test_cases, import_data, analytics
 
 # 创建FastAPI应用实例
@@ -181,6 +182,24 @@ async def startup_event():
         host=settings.host,
         port=settings.port
     )
+
+    # 在启动时执行一次 BigQuery 连通性检测
+    try:
+        history_service = HistoryService()
+        connection_ok = await history_service.test_connection()
+        logger.info(
+            "BigQuery connectivity check completed",
+            available=connection_ok,
+            use_real_bigquery=settings.use_real_bigquery,
+            project_id=settings.gcp_project_id,
+            dataset_id=settings.gcp_dataset_id,
+        )
+    except Exception as e:
+        logger.error(
+            "BigQuery connectivity check failed",
+            error=str(e),
+            exc_info=True
+        )
 
 # 关闭事件
 @app.on_event("shutdown")

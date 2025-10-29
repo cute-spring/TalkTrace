@@ -30,13 +30,13 @@ class BigQueryServiceFactory:
             logger.info(
                 "Creating real BigQuery service",
                 project_id=settings.gcp_project_id,
-                dataset_id=settings.bigquery_dataset_id,
+                dataset_id=settings.gcp_dataset_id,
                 credentials_path=settings.google_application_credentials
             )
 
             return RealBigQueryService(
                 project_id=settings.gcp_project_id,
-                dataset_id=settings.bigquery_dataset_id,
+                dataset_id=settings.gcp_dataset_id,
                 credentials_path=settings.google_application_credentials
             )
         else:

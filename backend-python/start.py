@@ -18,7 +18,7 @@ def main():
         host=settings.host,
         port=settings.port,
         reload=settings.environment == "development",
-        log_level=settings.log_level.lower()
+        log_config=None
     )
 
 if __name__ == "__main__":
