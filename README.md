@@ -32,6 +32,11 @@ docker-compose -f docker-compose.dev.yml up -d
 docker-compose -f docker-compose.dev.yml logs -f
 ```
 
+### Manual Setup Notes
+- For mock mode: keep `BIGQUERY_USE_MOCK=true` in `.env`.
+- For real BigQuery: set `BIGQUERY_USE_MOCK=false` and configure `GCP_PROJECT_ID`, `GCP_DATASET_ID`, and `GOOGLE_APPLICATION_CREDENTIALS`.
+- On startup, the backend logs a BigQuery connectivity check; if it fails, the API falls back to demo data.
+
 ## 📱 Access URLs
 
 - **Frontend Application**: http://localhost:3000
@@ -66,14 +71,26 @@ POSTGRES_PASSWORD=password
 # Redis Configuration
 REDIS_URL="redis://localhost:6379"
 
-# Google Cloud Configuration
+# BigQuery Mode (Mock vs Real)
+# When true, the backend uses mock data without connecting to BigQuery
+BIGQUERY_USE_MOCK=true
+
+# Google Cloud / BigQuery (used when BIGQUERY_USE_MOCK=false)
 GCP_PROJECT_ID=your-gcp-project-id
+GCP_DATASET_ID=your-bigquery-dataset
+# Optional: table used by helper scripts
+GCP_TABLE_ID=test_cases
 GOOGLE_APPLICATION_CREDENTIALS=./credentials/google-credentials.json
 
 # Application Configuration
 ENVIRONMENT=development
 PORT=8001
 ```
+
+### BigQuery Mode
+- Mock mode: set `BIGQUERY_USE_MOCK=true` to use built-in demo data. Useful for local development without GCP credentials.
+- Real mode: set `BIGQUERY_USE_MOCK=false`, provide `GCP_PROJECT_ID`, `GCP_DATASET_ID`, and `GOOGLE_APPLICATION_CREDENTIALS` (service account JSON). `GCP_TABLE_ID` is optional and used by scripts.
+- On startup, the backend runs a connectivity check and logs whether BigQuery is available. If the connection fails, endpoints still work with demo data fallback.
 
 ### Google Cloud Credentials
 1. Download the service account key file
@@ -142,9 +159,11 @@ docker-compose -f docker-compose.dev.yml build --no-cache
 ## 🐛 Troubleshooting
 
 ### BigQuery Connection Failed
-1. Check if GCP_PROJECT_ID is correct
-2. Confirm credentials file path is correct
-3. Verify service account permissions
+1. Confirm `BIGQUERY_USE_MOCK=false` if you intend to use real BigQuery
+2. Check `GCP_PROJECT_ID` and `GCP_DATASET_ID` values
+3. Confirm `GOOGLE_APPLICATION_CREDENTIALS` file path is correct
+4. Verify service account has BigQuery Data Viewer access to the dataset
+5. Review backend startup logs for the connectivity check result
 
 ### Database Connection Failed
 1. Check if PostgreSQL container is running properly

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Card,
@@ -16,7 +16,6 @@ import {
   Drawer,
 } from 'antd'
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
@@ -31,25 +30,122 @@ const { Title, Text } = Typography
 const { Option } = Select
 const { confirm } = Modal
 
-interface TestCase {
-  id: string
-  name: string
-  description?: string
-  status: string
-  owner: string
-  priority: string
-  domain?: string
-  difficulty?: string
-  version: string
-  created_date: string
-  updated_date?: string
-  tags: Array<{ name: string; color: string }>
-}
+  type TestStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'rejected'
+  type PriorityLevel = 'low' | 'medium' | 'high'
+
+  interface TestCase {
+    id: string
+    name: string
+    description?: string
+    status: TestStatus
+    owner: string
+    priority: PriorityLevel
+    domain?: string
+    difficulty?: string
+    version: string
+    created_date: string
+    updated_date?: string
+    tags: Array<{ name: string; color: string }>
+  }
+
+  // --- Mock data generator for development preview ---
+  const MOCK_OWNERS = ['alice', 'bob', 'charlie', 'diana', 'eva', 'frank', 'grace']
+  const MOCK_DOMAINS = ['finance', 'technology', 'healthcare', 'general'] as const
+  const MOCK_DIFFICULTIES = ['easy', 'medium', 'hard'] as const
+  const TAG_POOL: Array<{ name: string; color: string }> = [
+    { name: 'regression', color: 'geekblue' },
+    { name: 'smoke', color: 'green' },
+    { name: 'api', color: 'blue' },
+    { name: 'ui', color: 'purple' },
+    { name: 'security', color: 'volcano' },
+    { name: 'performance', color: 'magenta' },
+    { name: 'compliance', color: 'orange' },
+    { name: 'finance', color: 'gold' },
+    { name: 'healthcare', color: 'lime' },
+    { name: 'ml', color: 'cyan' },
+  ]
+
+  const pick = <T,>(arr: readonly T[] | T[]) => arr[Math.floor(Math.random() * arr.length)]
+  const sampleTags = (count: number) => {
+    const chosen: Array<{ name: string; color: string }> = []
+    const used = new Set<string>()
+    while (chosen.length < count) {
+      const t = TAG_POOL[Math.floor(Math.random() * TAG_POOL.length)]
+      if (!used.has(t.name)) {
+        used.add(t.name)
+        chosen.push(t)
+      }
+    }
+    return chosen
+  }
+
+  const randomDateWithinDays = (days: number) => {
+    const now = Date.now()
+    const offset = Math.floor(Math.random() * days * 24 * 60 * 60 * 1000)
+    return new Date(now - offset).toISOString()
+  }
+
+  const buildMockList = (
+    page: number,
+    pageSize: number,
+    filters: { status?: string; domain?: string; priority?: string; search?: string }
+  ) => {
+    const total = 48
+    const all: TestCase[] = Array.from({ length: total }).map((_, idx) => {
+      const statusPool: TestStatus[] = ['draft', 'pending_review', 'approved', 'published', 'rejected']
+      const prioPool: PriorityLevel[] = ['low', 'medium', 'high']
+      const domain = pick(MOCK_DOMAINS)
+      const difficulty = pick(MOCK_DIFFICULTIES)
+      const status = pick(statusPool)
+      const priority = pick(prioPool)
+      const owner = pick(MOCK_OWNERS)
+      const name = `TC-${String(idx + 1).padStart(3, '0')} ${domain.toUpperCase()} ${difficulty}`
+      const description = `Validate ${domain} flows with ${difficulty} complexity; ensure ${status} criteria met.`
+      const created = randomDateWithinDays(90)
+      const updated = Math.random() < 0.7 ? randomDateWithinDays(60) : undefined
+      return {
+        id: `TC-${idx + 1}`,
+        name,
+        description,
+        status,
+        owner,
+        priority,
+        domain,
+        difficulty,
+        version: `v1.${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}`,
+        created_date: created,
+        updated_date: updated,
+        tags: sampleTags(1 + Math.floor(Math.random() * 3)),
+      }
+    })
+
+    // Apply simple filters to make the mock behave like real data
+    const filtered = all.filter(item => {
+      if (filters.status && item.status !== filters.status) return false
+      if (filters.domain && item.domain !== filters.domain) return false
+      if (filters.priority && item.priority !== filters.priority) return false
+      if (filters.search) {
+        const q = filters.search.toLowerCase()
+        const text = `${item.name} ${item.description || ''} ${item.owner}`.toLowerCase()
+        if (!text.includes(q)) return false
+      }
+      return true
+    })
+
+    const start = (page - 1) * pageSize
+    const items = filtered.slice(start, start + pageSize)
+    return {
+      items,
+      page,
+      pageSize,
+      total: filtered.length,
+    }
+  }
 
 const TestCasePage: React.FC = () => {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
+  // removed unused navigate
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -98,26 +194,48 @@ const TestCasePage: React.FC = () => {
       // Debug: Log the current filters state
       console.log('Current filters state:', filters)
 
-      // Convert frontend parameter names to backend parameter names
+      // Convert frontend parameter names to backend parameter names without delete
+      const { pageSize, ...restFilters } = filters
       const apiParams = {
-        ...filters,
-        page_size: filters.pageSize, // Convert pageSize to page_size for backend
+        ...restFilters,
+        page_size: pageSize, // Convert pageSize to page_size for backend
       }
-      delete apiParams.pageSize // Remove frontend parameter name
 
       // Debug: Log the API parameters being sent
       console.log('API parameters being sent:', apiParams)
 
       const response = await testCaseService.getList(apiParams)
       console.log('API Response:', response)
-      console.log('Response data:', response.data)
-      console.log('Items:', response.data?.data?.items)
-      console.log('Items length:', response.data?.data?.items?.length)
-      // Fix: Access the nested data structure correctly
-      setData(response.data.data)
+      const payload = response?.data?.data
+      const itemsLen = payload?.items?.length || 0
+      console.log('Resolved payload items length:', itemsLen)
+
+      // Fallback to realistic mock data in development when API returns empty
+      if (import.meta.env.MODE === 'development' && itemsLen === 0) {
+        const mock = buildMockList(filters.page, filters.pageSize, {
+          status: filters.status,
+          domain: filters.domain,
+          priority: filters.priority,
+          search: filters.search,
+        })
+        console.log('Using mock test cases for development:', mock)
+        setData(mock)
+      } else {
+        setData(payload)
+      }
     } catch (error) {
       message.error(t('testCases.fetchFailed'))
       console.error('Failed to fetch test cases:', error)
+      // Provide mock data even when the API fails during development
+      if (import.meta.env.MODE === 'development') {
+        const mock = buildMockList(filters.page, filters.pageSize, {
+          status: filters.status,
+          domain: filters.domain,
+          priority: filters.priority,
+          search: filters.search,
+        })
+        setData(mock)
+      }
     } finally {
       setLoading(false)
     }
@@ -238,8 +356,8 @@ const TestCasePage: React.FC = () => {
     }
   }
 
-  const getStatusTag = (status: string) => {
-    const statusConfig = {
+  const getStatusTag = (status: TestStatus) => {
+    const statusConfig: Record<TestStatus, { color: string; text: string }> = {
       draft: { color: 'default', text: t('status.draft') },
       pending_review: { color: 'processing', text: t('status.pending_review') },
       approved: { color: 'success', text: t('status.approved') },
@@ -251,8 +369,8 @@ const TestCasePage: React.FC = () => {
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
-  const getPriorityTag = (priority: string) => {
-    const priorityConfig = {
+  const getPriorityTag = (priority: PriorityLevel) => {
+    const priorityConfig: Record<PriorityLevel, { color: string; text: string }> = {
       low: { color: 'green', text: t('priority.low') },
       medium: { color: 'orange', text: t('priority.medium') },
       high: { color: 'red', text: t('priority.high') },
@@ -280,14 +398,14 @@ const TestCasePage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status) => getStatusTag(status),
+      render: (status: TestStatus) => getStatusTag(status),
     },
     {
       title: t('testCases.columns.priority'),
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
-      render: (priority) => getPriorityTag(priority),
+      render: (priority: PriorityLevel) => getPriorityTag(priority),
     },
     {
       title: t('testCases.columns.domain'),
@@ -314,12 +432,10 @@ const TestCasePage: React.FC = () => {
       dataIndex: 'tags',
       key: 'tags',
       width: 200,
-      render: (tags) => (
+      render: (tags: TestCase['tags']) => (
         <Space wrap>
-          {tags.map((tagItem, index) => (
-            <Tag key={index} color={tagItem.color}>
-              {tagItem.name}
-            </Tag>
+          {tags.map((tagItem: { name: string; color: string }, index: number) => (
+            <Tag key={index} color={tagItem.color}>{tagItem.name}</Tag>
           ))}
         </Space>
       ),
@@ -593,12 +709,12 @@ const TestCasePage: React.FC = () => {
 
             <div style={{ marginBottom: 16 }}>
               <Text strong>{t('testCaseDetail.basicInfo.createdTime')}</Text>
-              <Text>{new Date(currentTestCase.createdDate).toLocaleString()}</Text>
+              <Text>{new Date(currentTestCase.created_date).toLocaleString()}</Text>
             </div>
 
             <div style={{ marginBottom: 16 }}>
               <Text strong>{t('testCaseDetail.basicInfo.updatedTime')}</Text>
-              <Text>{new Date(currentTestCase.updatedDate).toLocaleString()}</Text>
+              <Text>{currentTestCase.updated_date ? new Date(currentTestCase.updated_date).toLocaleString() : '-'}</Text>
             </div>
           </div>
         )}

@@ -18,18 +18,19 @@ from app.utils.logger import logger
 class RealBigQueryService(BigQueryService):
     """真实BigQuery服务实现"""
 
-    def __init__(self, project_id: str, dataset_id: str, credentials_path: Optional[str] = None):
+    def __init__(self, project_id: str, dataset_id: str, table_id: str, credentials_path: Optional[str] = None):
         """
         初始化真实BigQuery服务
 
         Args:
             project_id: GCP项目ID
             dataset_id: BigQuery数据集ID
+            table_id: BigQuery表ID
             credentials_path: 服务账号凭证文件路径，为None时使用应用默认凭证
         """
         self.project_id = project_id
         self.dataset_id = dataset_id
-        self.conversations_table = f"{project_id}.{dataset_id}.conversations"
+        self.conversations_table = f"{project_id}.{dataset_id}.{table_id}"
         self.retrieval_chunks_table = f"{project_id}.{dataset_id}.retrieval_chunks"
 
         # 初始化BigQuery客户端

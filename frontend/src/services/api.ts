@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AxiosResponse } from 'axios'
+// Removed unused AxiosResponse type import
 
 // Single source of truth: in development always use Vite proxy '/api'
 // In production respect VITE_API_URL, otherwise fall back to '/api'

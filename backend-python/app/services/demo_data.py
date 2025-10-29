@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import random
+import json
+from pathlib import Path
 
 # 演示历史记录数据
 MOCK_HISTORY_DATA = [
@@ -574,6 +576,25 @@ MOCK_TEST_CASES = [
         }
     }
 ]
+
+# 从JSON文件加载测试用例（如果存在），保持API契约不变
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+def _load_json_list(filename: str) -> List[Dict[str, Any]]:
+    path = DATA_DIR / filename
+    if path.exists():
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                return data
+        except Exception:
+            pass
+    return []
+
+_loaded_cases = _load_json_list("mock_test_cases.json")
+if _loaded_cases:
+    MOCK_TEST_CASES = _loaded_cases
 
 # 可用模型列表
 AVAILABLE_MODELS = ["gpt-4o-mini", "gpt-4o", "claude-3-sonnet"]

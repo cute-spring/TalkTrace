@@ -1,0 +1,204 @@
+[
+  {
+    "id": "TC-0001",
+    "name": "投资基金风险咨询测试用例",
+    "description": "测试AI对投资基金风险问题的回答质量和上下文理解能力",
+    "metadata": {
+      "status": "draft",
+      "owner": "expert@company.com",
+      "priority": "high",
+      "tags": [
+        {"name": "finance", "color": "#1890ff"},
+        {"name": "high-priority", "color": "#ff4d4f"},
+        {"name": "multi-turn", "color": "#722ed1"}
+      ],
+      "version": "1.0",
+      "created_date": "2024-01-15T10:00:00Z",
+      "updated_date": "2024-01-16T15:30:00Z",
+      "source_session": "session_demo_001"
+    },
+    "domain": "finance",
+    "difficulty": "medium",
+    "test_config": {
+      "model": {
+        "name": "gpt-4o-mini",
+        "version": "2024-01-01",
+        "params": {"temperature": 0.0, "max_tokens": 512, "top_p": 0.9}
+      },
+      "prompts": {
+        "system": "You are a helpful assistant specialized in financial advice. Always provide accurate, clear, and actionable information.",
+        "user_instruction": "Using the provided documents, answer the user's question comprehensively and cite your sources."
+      },
+      "retrieval": {"top_k": 10, "similarity_threshold": 0.7, "reranker_enabled": true}
+    },
+    "input": {
+      "current_query": {"text": "能再解释一下第一个方案的具体风险吗？", "timestamp": "2024-01-15T10:06:00Z"},
+      "conversation_history": [
+        {"turn": 1, "role": "user", "query": "帮我比较一下投资基金和股票投资的优缺点", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn": 2, "role": "assistant", "response": "投资基金的优势包括分散风险、专业管理、门槛较低等。缺点包括管理费用、收益可能低于直接投资等。股票投资的优势是收益潜力大、控制权强，缺点是风险集中、需要专业知识等。", "retrieved_chunks": ["CH-1001", "CH-1002"], "timestamp": "2024-01-15T10:00:01Z"},
+        {"turn": 3, "role": "user", "query": "如果风险承受能力一般，基金应该怎么选？", "timestamp": "2024-01-15T10:01:00Z"},
+        {"turn": 4, "role": "assistant", "response": "风险承受能力一般可选择偏债混合型或指数基金，关注费用率和历史回撤。", "retrieved_chunks": ["CH-1003", "CH-1004"], "timestamp": "2024-01-15T10:01:01Z"},
+        {"turn": 5, "role": "user", "query": "第一个方案的具体风险有哪些？", "timestamp": "2024-01-15T10:02:00Z"},
+        {"turn": 6, "role": "assistant", "response": "包括市场风险、流动性风险、管理风险、信用风险和运营风险。下面逐条解释。", "retrieved_chunks": ["CH-1005", "CH-1006"], "timestamp": "2024-01-15T10:02:02Z"},
+        {"turn": 7, "role": "user", "query": "有没有规避这些风险的具体方法？", "timestamp": "2024-01-15T10:03:00Z"},
+        {"turn": 8, "role": "assistant", "response": "可以通过分散配置、设置止损/赎回策略、选择成熟基金公司及评级较高的产品来降低风险。", "retrieved_chunks": ["CH-1007", "CH-1008"], "timestamp": "2024-01-15T10:03:02Z"}
+      ],
+      "current_retrieved_chunks": [
+        {"id": "CH-1001", "title": "基金与股票对比", "source": "https://internal.com/finance/compare-fund-stock", "content": "基金与股票的收益与风险对比，包含典型回撤和收益分布。", "metadata": {"publish_date": "2023-05-01", "chunk_type": "analysis", "confidence": 0.88, "retrieval_rank": 5}},
+        {"id": "CH-1002", "title": "股票投资基础", "source": "https://internal.com/finance/stock-basics", "content": "股票投资的基本原理、收益来源及风险点。", "metadata": {"publish_date": "2023-03-01", "chunk_type": "conceptual", "confidence": 0.85, "retrieval_rank": 8}},
+        {"id": "CH-1003", "title": "基金类型与风险", "source": "https://internal.com/finance/fund-types", "content": "不同基金类型的风险画像与适配人群。", "metadata": {"publish_date": "2023-07-01", "chunk_type": "guide", "confidence": 0.9, "retrieval_rank": 4}},
+        {"id": "CH-1004", "title": "费用率与回撤", "source": "https://internal.com/finance/fee-drawdown", "content": "费用率对长期收益的影响，历史最大回撤统计。", "metadata": {"publish_date": "2023-08-01", "chunk_type": "analysis", "confidence": 0.87, "retrieval_rank": 6}},
+        {"id": "CH-1005", "title": "投资基金风险管理指南", "source": "https://internal.com/finance/fund-risk", "content": "投资基金的具体风险包括市场、流动性、管理、信用和运营风险。", "metadata": {"publish_date": "2023-06-01", "effective_date": "2023-06-01", "expiration_date": "2024-12-31", "chunk_type": "conceptual", "confidence": 0.92, "retrieval_rank": 1}},
+        {"id": "CH-1006", "title": "赎回与流动性风险", "source": "https://internal.com/finance/liquidity", "content": "赎回限制与流动性管理策略的最佳实践。", "metadata": {"publish_date": "2023-09-01", "chunk_type": "policy", "confidence": 0.83, "retrieval_rank": 7}},
+        {"id": "CH-1007", "title": "风控策略示例", "source": "https://internal.com/finance/risk-mitigation", "content": "分散投资、止损线设置和基金公司尽职调查流程。", "metadata": {"publish_date": "2023-10-01", "chunk_type": "howto", "confidence": 0.89, "retrieval_rank": 2}},
+        {"id": "CH-1008", "title": "基金评级与选择", "source": "https://internal.com/finance/fund-rating", "content": "基金评级标准与选择流程，以降低管理风险。", "metadata": {"publish_date": "2023-11-01", "chunk_type": "guide", "confidence": 0.84, "retrieval_rank": 3}}
+      ]
+    },
+    "execution": {
+      "actual": {
+        "response": "投资基金的具体风险包括市场风险、流动性风险、管理风险、信用风险和运营风险；可通过分散配置、选择评级较高的基金与制定赎回策略进行规避。",
+        "performance_metrics": {"total_response_time": 2.2, "retrieval_time": 0.4, "generation_time": 1.8, "tokens_used": 512, "chunks_considered": 10},
+        "retrieval_quality": {"max_similarity": 0.92, "avg_similarity": 0.8, "diversity_score": 0.7}
+      },
+      "user_feedback": {"rating": 4, "category": "completeness", "comment": "这次更具体了，但还可以增加更多实操建议。", "concern": "风险应对部分需要更多示例。", "suggested_improvement": "增加不同市场环境下的具体策略例子", "feedback_date": "2024-01-15T10:06:30Z", "feedback_source": "user"}
+    },
+    "analysis": {
+      "issue_type": "context_understanding",
+      "root_cause": "此前回答泛化，已通过更多检索块强化具体性。",
+      "expected_answer": "细化各风险与规避方法，并结合参考文档给出可操作建议。",
+      "acceptance_criteria": "识别指代、列举风险细节、提供规避策略、引用来源、结构清晰",
+      "quality_scores": {"context_understanding": 4, "answer_accuracy": 4, "answer_completeness": 4, "clarity": 4, "citation_quality": 4},
+      "optimization_suggestions": ["引入场景化示例", "展示不同风险的监控指标"],
+      "notes": "对话历史与检索块已显著增强。",
+      "analyzed_by": "expert@company.com",
+      "analysis_date": "2024-01-16T15:30:00Z"
+    }
+  },
+  {
+    "id": "TC-0002",
+    "name": "React路由配置测试用例",
+    "description": "测试AI对React开发问题的解答能力和代码示例质量",
+    "metadata": {
+      "status": "approved",
+      "owner": "frontend@company.com",
+      "priority": "medium",
+      "tags": [
+        {"name": "react", "color": "#61dafb"},
+        {"name": "frontend", "color": "#ff7875"},
+        {"name": "code-example", "color": "#52c41a"}
+      ],
+      "version": "2.0",
+      "created_date": "2024-01-15T11:00:00Z",
+      "updated_date": "2024-01-17T09:15:00Z",
+      "source_session": "session_demo_002"
+    },
+    "domain": "development",
+    "difficulty": "medium",
+    "test_config": {
+      "model": {"name": "gpt-4o", "version": "2024-01-01", "params": {"temperature": 0.1, "max_tokens": 800, "top_p": 0.95}},
+      "prompts": {
+        "system": "You are an expert React developer. Provide clear, accurate code examples and explain best practices.",
+        "user_instruction": "Answer the user's React question with working code examples and explain the concepts clearly."
+      },
+      "retrieval": {"top_k": 3, "similarity_threshold": 0.8, "reranker_enabled": true}
+    },
+    "input": {
+      "current_query": {"text": "如何配置React项目的路由？", "timestamp": "2024-01-15T11:00:00Z"},
+      "conversation_history": [
+        {"turn": 1, "role": "user", "query": "如何在React里添加路由？", "timestamp": "2024-01-15T11:00:00Z"},
+        {"turn": 2, "role": "assistant", "response": "使用 React Router v6：安装依赖并配置 BrowserRouter、Routes 和 Route。", "retrieved_chunks": ["CH-3001"], "timestamp": "2024-01-15T11:00:01Z"},
+        {"turn": 3, "role": "user", "query": "嵌套路由怎么做？", "timestamp": "2024-01-15T11:01:00Z"},
+        {"turn": 4, "role": "assistant", "response": "在父级 Route 使用 element 渲染布局组件，并在其内部再定义子 Routes。", "retrieved_chunks": ["CH-3002"], "timestamp": "2024-01-15T11:01:02Z"}
+      ],
+      "current_retrieved_chunks": [
+        {"id": "CH-3001", "title": "React Router配置指南", "source": "https://docs.react-router.com", "content": "安装与基础配置：BrowserRouter、Routes、Route。", "metadata": {"publish_date": "2023-12-01", "chunk_type": "tutorial", "confidence": 0.95, "retrieval_rank": 1}},
+        {"id": "CH-3002", "title": "嵌套路由与布局", "source": "https://docs.react-router.com/en/main/start/overview", "content": "在父路由中渲染布局组件并定义子路由。", "metadata": {"publish_date": "2023-12-01", "chunk_type": "tutorial", "confidence": 0.93, "retrieval_rank": 2}},
+        {"id": "CH-3003", "title": "动态路由参数", "source": "https://docs.react-router.com/en/main/hooks/use-params", "content": "使用 useParams 读取动态路由参数。", "metadata": {"publish_date": "2023-12-01", "chunk_type": "reference", "confidence": 0.9, "retrieval_rank": 3}},
+        {"id": "CH-3004", "title": "受保护路由示例", "source": "https://internal.com/react/protected-route", "content": "基于鉴权状态控制访问的受保护路由模式。", "metadata": {"publish_date": "2023-11-15", "chunk_type": "howto", "confidence": 0.88, "retrieval_rank": 4}},
+        {"id": "CH-3005", "title": "代码分割与懒加载", "source": "https://internal.com/react/code-splitting", "content": "使用 React.lazy 和 Suspense 对路由组件进行懒加载。", "metadata": {"publish_date": "2023-11-20", "chunk_type": "guide", "confidence": 0.87, "retrieval_rank": 5}}
+      ]
+    },
+    "execution": {
+      "actual": {
+        "response": "配置React项目路由需要使用React Router库。首先安装：npm install react-router-dom@6。然后在应用中配置路由：\n\n```jsx\nimport { BrowserRouter, Routes, Route } from 'react-router-dom';\nimport Home from './pages/Home';\nimport About from './pages/About';\n\nfunction App() {\n  return (\n    <BrowserRouter>\n      <Routes>\n        <Route path=\"/\" element={<Home />} />\n        <Route path=\"/about\" element={<About />} />\n      </Routes>\n    </BrowserRouter>\n  );\n}\n```",
+        "performance_metrics": {"total_response_time": 1.8, "retrieval_time": 0.2, "generation_time": 1.6, "tokens_used": 287, "chunks_considered": 3},
+        "retrieval_quality": {"max_similarity": 0.95, "avg_similarity": 0.85, "diversity_score": 0.72}
+      }
+    },
+    "analysis": {
+      "issue_type": "good_example",
+      "root_cause": "回答准确、代码示例完整、解释清晰",
+      "expected_answer": "提供了准确的React Router配置方法和完整的代码示例",
+      "acceptance_criteria": "1. 提供正确的安装命令 2. 包含完整的路由配置代码 3. 代码示例可运行 4. 解释清楚各个组件的作用",
+      "quality_scores": {"context_understanding": 5, "answer_accuracy": 5, "answer_completeness": 4, "clarity": 5, "citation_quality": 4},
+      "optimization_suggestions": ["可以添加更多高级用法示例", "包含嵌套路由的配置方法"],
+      "notes": "这是一个质量较好的回答，代码示例完整且正确。",
+      "analyzed_by": "frontend@company.com",
+      "analysis_date": "2024-01-17T09:15:00Z"
+    }
+  },
+  {
+    "id": "TC-0003",
+    "name": "测试用例1",
+    "description": "完整的测试用例示例，包含所有必要字段",
+    "metadata": {
+      "status": "draft",
+      "owner": "user@example.com",
+      "priority": "medium",
+      "tags": [
+        {"name": "finance", "color": "#1890ff"},
+        {"name": "multi-turn", "color": "#722ed1"}
+      ],
+      "version": "1.0",
+      "created_date": "2024-01-15T00:00:00Z",
+      "updated_date": "2024-01-16T00:00:00Z",
+      "source_session": "session_123"
+    },
+    "domain": "finance",
+    "difficulty": "medium",
+    "test_config": {
+      "model": {"name": "gpt-4o-mini", "params": {"temperature": 0.0, "max_tokens": 512}},
+      "prompts": {
+        "system": "You are a helpful assistant specializing in financial advice. Always provide accurate, clear, and actionable information.",
+        "user_instruction": "Using the provided documents, answer the user's question comprehensively and cite your sources."
+      }
+    },
+    "input": {
+      "current_query": {"text": "能再解释一下第一个方案的具体风险吗？", "timestamp": "2024-01-15T10:04:00Z"},
+      "conversation_history": [
+        {"turn": 1, "role": "user", "query": "帮我比较一下投资基金和股票投资的优缺点", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn": 2, "role": "assistant", "response": "投资基金的优势包括分散风险、专业管理等；股票投资的优势是潜在收益更高但风险集中。", "retrieved_chunks": ["CH-2001", "CH-2002"], "timestamp": "2024-01-15T10:00:01Z"},
+        {"turn": 3, "role": "user", "query": "那偏债混合型基金和指数基金区别是什么？", "timestamp": "2024-01-15T10:01:00Z"},
+        {"turn": 4, "role": "assistant", "response": "偏债混合型更稳健，指数基金跟踪市场指数，波动更大一些。", "retrieved_chunks": ["CH-2003"], "timestamp": "2024-01-15T10:01:02Z"},
+        {"turn": 5, "role": "user", "query": "具体风险和规避建议给几个例子。", "timestamp": "2024-01-15T10:03:00Z"},
+        {"turn": 6, "role": "assistant", "response": "举例：在市场下跌时设置赎回阈值，或采用定投分散时点风险。", "retrieved_chunks": ["CH-2004", "CH-2005"], "timestamp": "2024-01-15T10:03:02Z"}
+      ],
+      "current_retrieved_chunks": [
+        {"id": "CH-2001", "title": "基金与股票差异综述", "source": "https://internal.com/finance/overview", "content": "收益与风险的对比，总览差异点。", "metadata": {"publish_date": "2023-04-01", "chunk_type": "conceptual", "confidence": 0.86, "retrieval_rank": 6}},
+        {"id": "CH-2002", "title": "投资产品风险矩阵", "source": "https://internal.com/finance/risk-matrix", "content": "按资产类别划分的风险等级与影响因子。", "metadata": {"publish_date": "2023-04-10", "chunk_type": "analysis", "confidence": 0.89, "retrieval_rank": 5}},
+        {"id": "CH-2003", "title": "基金类型与波动", "source": "https://internal.com/finance/volatility", "content": "不同基金的历史波动与最大回撤。", "metadata": {"publish_date": "2023-07-10", "chunk_type": "analysis", "confidence": 0.88, "retrieval_rank": 4}},
+        {"id": "CH-2004", "title": "定投与止损策略", "source": "https://internal.com/finance/dca-stoploss", "content": "定投分散时点风险与止损阈值设置方法。", "metadata": {"publish_date": "2023-10-10", "chunk_type": "howto", "confidence": 0.9, "retrieval_rank": 2}},
+        {"id": "CH-2005", "title": "赎回与税务考虑", "source": "https://internal.com/finance/redemption-tax", "content": "赎回流程、费用与税务要点。", "metadata": {"publish_date": "2023-11-01", "chunk_type": "policy", "confidence": 0.82, "retrieval_rank": 3}}
+      ]
+    },
+    "execution": {
+      "actual": {
+        "response": "投资基金的具体风险包括市场风险...",
+        "performance_metrics": {"total_response_time": 2.1, "retrieval_time": 0.3, "generation_time": 1.8, "tokens_used": 345, "chunks_considered": 5},
+        "retrieval_quality": {"max_similarity": 0.92, "avg_similarity": 0.78, "diversity_score": 0.65}
+      },
+      "user_feedback": {"rating": 3, "category": "accuracy", "comment": "回答列出了风险类型，但没有具体说明如何识别和应对这些风险", "concern": "感觉回答比较模板化，缺乏针对性的建议", "suggested_improvement": "希望能举例说明每种风险在什么情况下会发生", "feedback_date": "2024-01-15T10:02:00Z", "feedback_source": "user"}
+    },
+    "analysis": {
+      "issue_type": "context_understanding",
+      "root_cause": "未能正确解析'第一个方案'在对话历史中的指代",
+      "expected_answer": "您询问的'第一个方案'（投资基金）的具体风险包括：...",
+      "acceptance_criteria": "1. 必须正确识别'第一个方案'指代投资基金...",
+      "quality_scores": {"context_understanding": 2, "answer_accuracy": 4, "answer_completeness": 3, "clarity": 3, "citation_quality": 4},
+      "optimization_suggestions": ["改进对话状态跟踪，准确识别历史指代", "在回答中增加具体示例提高实用性"],
+      "notes": "用户明显在延续之前的对话，但AI未能充分理解上下文。",
+      "analyzed_by": "expert@company.com",
+      "analysis_date": "2024-01-16"
+    }
+  }
+]

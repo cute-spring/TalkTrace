@@ -169,3 +169,13 @@ pytest tests/
 | `ALLOWED_ORIGINS` | http://localhost:3000,http://localhost:5173 | 允许的跨域来源 |
 | `LOG_LEVEL` | INFO | 日志级别 |
 | `LOG_FORMAT` | json | 日志格式 (json/console) |
+| `BIGQUERY_USE_MOCK` | true | 是否使用Mock模式（true为使用演示数据，false为连接真实BigQuery） |
+| `GCP_PROJECT_ID` | - | GCP项目ID（在BIGQUERY_USE_MOCK=false时必填） |
+| `GCP_DATASET_ID` | - | BigQuery数据集ID（在BIGQUERY_USE_MOCK=false时必填） |
+| `GCP_TABLE_ID` | test_cases | 可选，脚本使用的测试用例表ID |
+| `GOOGLE_APPLICATION_CREDENTIALS` | ./credentials/google-credentials.json | 服务账号凭证文件路径（在BIGQUERY_USE_MOCK=false时必填） |
+
+### BigQuery连接与启动检查
+- 当 `BIGQUERY_USE_MOCK=true` 时，后端使用内置演示数据，不依赖真实BigQuery。
+- 当 `BIGQUERY_USE_MOCK=false` 时，需要配置 `GCP_PROJECT_ID`、`GCP_DATASET_ID` 和 `GOOGLE_APPLICATION_CREDENTIALS`。
+- 应用启动时会进行一次BigQuery连通性检查，并记录日志；若连接失败，接口将自动回退到演示数据以保证可用性。

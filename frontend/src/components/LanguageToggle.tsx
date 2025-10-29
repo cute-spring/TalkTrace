@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Dropdown, Button, Space } from 'antd'
+import { Dropdown, Button } from 'antd'
 import { GlobalOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 
