@@ -25,8 +25,12 @@ class Settings(BaseSettings):
     bigquery_use_mock: bool = True  # 默认使用Mock服务
     gcp_project_id: Optional[str] = None
     gcp_dataset_id: Optional[str] = None
-    gcp_table_id: Optional[str] = None
+    gcp_table_id: str = "conversations"
     google_application_credentials: Optional[str] = None
+    bigquery_use_real_test_cases: bool = False
+
+    # CORS
+    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:8080"]
 
     @field_validator('allowed_origins', mode='before')
     @classmethod

@@ -8,23 +8,17 @@ from app.models.test_case import (
 )
 from app.services.demo_data import MOCK_TEST_CASES
 from app.utils.logger import logger
+from app.config import settings
+from app.services.bigquery_test_case_service import BigQueryTestCaseService
+from app.services.base_service import BaseTestCaseService
 
-class TestCaseService:
-    """测试用例服务类"""
-    _instance = None
-    _shared_service = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(TestCaseService, cls).__new__(cls)
-        return cls._instance
-
+class MockTestCaseService(BaseTestCaseService):
     def __init__(self):
-        """初始化测试用例服务"""
+        """初始化模拟测试用例服务，从内存加载数据"""
         # 如果已经有共享服务实例，直接使用
-        if TestCaseService._shared_service is not None:
-            self.df = TestCaseService._shared_service.df
-            self.id_counter = TestCaseService._shared_service.id_counter
+        if MockTestCaseService._shared_service is not None:
+            self.df = MockTestCaseService._shared_service.df
+            self.id_counter = MockTestCaseService._shared_service.id_counter
             return
 
         # 转换演示数据为DataFrame
@@ -37,9 +31,9 @@ class TestCaseService:
         self.id_counter = max(int(tc['id'].split('-')[1]) for tc in MOCK_TEST_CASES)
 
         # 保存为共享实例
-        TestCaseService._shared_service = self
+        MockTestCaseService._shared_service = self
 
-        logger.info("TestCaseService initialized", record_count=len(self.df))
+        logger.info("MockTestCaseService initialized", record_count=len(self.df))
 
     async def get_test_cases(
         self,
@@ -423,3 +417,9 @@ class TestCaseService:
 
         logger.info("Source session mappings retrieved", mapping_count=len(session_mapping))
         return session_mapping
+
+def TestCaseService() -> BaseTestCaseService:
+    if settings.bigquery_use_real_test_cases:
+        return BigQueryTestCaseService()
+    else:
+        return MockTestCaseService()

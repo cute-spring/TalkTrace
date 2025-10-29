@@ -11,7 +11,6 @@ from app.models.common import ApiResponse
 from app.utils.logger import logger
 
 router = APIRouter()
-test_case_service = TestCaseService()
 
 @router.get("/", response_model=ApiResponse[dict])
 async def get_test_cases(
@@ -24,6 +23,7 @@ async def get_test_cases(
 ):
     """获取测试用例列表"""
     try:
+        test_case_service = TestCaseService()
         result = await test_case_service.get_test_cases(
             page=page,
             page_size=page_size,
@@ -55,6 +55,7 @@ async def get_test_cases(
 async def get_test_case_by_id(test_case_id: str):
     """根据ID获取测试用例（完整结构）"""
     try:
+        test_case_service = TestCaseService()
         test_case = await test_case_service.get_test_case_by_id(test_case_id)
 
         if not test_case:
@@ -82,6 +83,7 @@ async def get_test_case_by_id(test_case_id: str):
 async def create_test_case(request: TestCaseCreate):
     """创建测试用例"""
     try:
+        test_case_service = TestCaseService()
         test_case = await test_case_service.create_test_case(request)
 
         logger.info("Test case created",
@@ -103,6 +105,7 @@ async def create_test_case(request: TestCaseCreate):
 async def update_test_case(test_case_id: str, request: TestCaseUpdate):
     """更新测试用例"""
     try:
+        test_case_service = TestCaseService()
         test_case = await test_case_service.update_test_case(test_case_id, request)
 
         if not test_case:
@@ -130,6 +133,7 @@ async def update_test_case(test_case_id: str, request: TestCaseUpdate):
 async def delete_test_case(test_case_id: str):
     """删除测试用例"""
     try:
+        test_case_service = TestCaseService()
         success = await test_case_service.delete_test_case(test_case_id)
 
         if not success:
@@ -157,6 +161,7 @@ async def delete_test_case(test_case_id: str):
 async def batch_operation(request: BatchOperation):
     """批量操作测试用例"""
     try:
+        test_case_service = TestCaseService()
         result = await test_case_service.batch_operation(request)
 
         logger.info("Batch operation completed",
@@ -179,6 +184,7 @@ async def batch_operation(request: BatchOperation):
 async def get_statistics():
     """获取测试用例统计信息"""
     try:
+        test_case_service = TestCaseService()
         stats = await test_case_service.get_statistics()
 
         logger.info("Statistics retrieved", total_count=stats["total_count"])
@@ -195,6 +201,7 @@ async def get_statistics():
 async def get_tags():
     """获取所有标签"""
     try:
+        test_case_service = TestCaseService()
         tags = await test_case_service.get_tags()
 
         logger.info("Tags retrieved", tag_count=len(tags))
